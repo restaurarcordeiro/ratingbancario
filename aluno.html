@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Painel — Rating Bancário Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080f08;--surface:#0f1a0f;--surface2:#162016;--surface3:#1c2a1c;
+  --border:rgba(0,200,83,0.12);--border-hover:rgba(0,200,83,0.3);
+  --green:#00c853;--green-dark:#00a846;--green-soft:#4ade80;
+  --gold:#ffd600;--red:#f87171;--amber:#fbbf24;
+  --text:#ffffff;--muted:#6b9b7b;--dim:#3a5a3a;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* NAV */
+.nav{background:rgba(8,15,8,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#00c853,#00a846);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;}
+.logo-text .logo-title{font-size:14px;font-weight:800;}
+.logo-text .logo-sub{font-size:10px;color:var(--muted);}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-user{font-size:13px;color:var(--muted);}
+.nav-user strong{color:var(--text);}
+.btn-sair{background:none;border:1px solid rgba(248,113,113,0.3);color:#f87171;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.btn-sair:hover{background:rgba(248,113,113,0.1);}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 360px;gap:0;height:calc(100vh - 64px);}
+@media(max-width:900px){.layout{grid-template-columns:1fr;height:auto;}.chat-panel{display:none;}.chat-fab{display:flex!important;}}
+.main-area{padding:32px 28px;overflow-y:auto;height:100%;}
+.chat-panel{background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;height:100%;position:sticky;top:64px;overflow:hidden;}
+
+/* SCORE HEADER */
+.score-header{background:linear-gradient(135deg,var(--surface),#0d1a0d);border:1px solid var(--border);border-radius:20px;padding:32px;margin-bottom:24px;display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center;}
+@media(max-width:600px){.score-header{grid-template-columns:1fr;text-align:center;}}
+.score-gauge-wrap{text-align:center;}
+.score-circle{width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--green) 0%,var(--green) var(--pct,0%),#1a2a1a var(--pct,0%) 100%);display:flex;align-items:center;justify-content:center;position:relative;margin:0 auto;}
+.score-circle-inner{width:110px;height:110px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-num{font-size:32px;font-weight:900;color:var(--green);line-height:1;}
+.score-max{font-size:11px;color:var(--muted);}
+.score-info{}
+.score-classif{font-size:13px;font-weight:700;padding:4px 14px;border-radius:100px;display:inline-block;margin-bottom:12px;}
+.score-name{font-size:26px;font-weight:900;margin-bottom:8px;}
+.score-desc{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.progress-wrap{margin-bottom:8px;}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.progress-track{height:8px;border-radius:100px;background:var(--surface2);}
+.progress-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--green-dark),var(--green));transition:width 0.8s ease;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;}
+.stat-num{font-size:28px;font-weight:900;color:var(--green);}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* CATEGORIAS */
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.cat-tab{padding:8px 16px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:none;color:var(--muted);transition:all 0.2s;}
+.cat-tab:hover{border-color:var(--border-hover);color:var(--text);}
+.cat-tab.active{background:rgba(0,200,83,0.15);border-color:rgba(0,200,83,0.4);color:var(--green-soft);}
+
+/* TAREFAS */
+.tasks-list{display:flex;flex-direction:column;gap:10px;}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;transition:all 0.2s;cursor:pointer;}
+.task-card:hover{border-color:var(--border-hover);background:var(--surface2);}
+.task-card.done{opacity:0.6;background:rgba(0,200,83,0.04);}
+.task-checkbox{width:28px;height:28px;border-radius:8px;border:2px solid var(--dim);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.2s;flex-shrink:0;}
+.task-card.done .task-checkbox{background:var(--green);border-color:var(--green);color:#000;}
+.task-body{}
+.task-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.task-card.done .task-name{text-decoration:line-through;color:var(--muted);}
+.task-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.task-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.task-pts{font-size:13px;font-weight:800;color:var(--green);white-space:nowrap;}
+.task-impact{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;white-space:nowrap;}
+.impact-critico{background:rgba(248,113,113,0.15);color:#f87171;}
+.impact-alto{background:rgba(251,191,36,0.12);color:var(--amber);}
+.impact-medio{background:rgba(0,200,83,0.12);color:var(--green);}
+.impact-baixo{background:rgba(255,255,255,0.06);color:#aaa;}
+
+/* CONQUISTAS */
+.section-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.badges-row{display:flex;gap:12px;flex-wrap:wrap;}
+.badge-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;width:110px;transition:all 0.2s;}
+.badge-card.unlocked{border-color:rgba(255,214,0,0.4);background:rgba(255,214,0,0.05);}
+.badge-card.locked{opacity:0.4;filter:grayscale(1);}
+.badge-emoji{font-size:28px;margin-bottom:8px;}
+.badge-name{font-size:11px;font-weight:700;}
+.badge-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* HISTÓRICO */
+.hist-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;}
+.hist-item{display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:12px 16px;}
+.hist-icon{font-size:18px;}
+.hist-info{flex:1;}
+.hist-name{font-size:13px;font-weight:600;}
+.hist-date{font-size:11px;color:var(--muted);}
+.hist-pts{font-size:13px;font-weight:800;color:var(--green);}
+
+/* CONTEUDO EDUCATIVO */
+.edu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:600px){.edu-grid{grid-template-columns:1fr;}}
+.edu-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all 0.2s;}
+.edu-card:hover{border-color:var(--border-hover);}
+.edu-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+.edu-title{font-size:14px;font-weight:700;margin-bottom:6px;}
+.edu-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+
+/* MODAL EDU */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;margin-top:-4px;}
+.modal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;}
+.modal-title{font-size:20px;font-weight:900;margin-bottom:16px;}
+.modal-text{font-size:14px;color:#ccc;line-height:1.8;}
+
+/* CHAT PANEL */
+.chat-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.chat-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-dark));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.chat-info .chat-name{font-size:14px;font-weight:800;}
+.chat-info .chat-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px;}
+.chat-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;}
+.msg{max-width:85%;padding:12px 16px;border-radius:14px;font-size:13px;line-height:1.6;}
+.msg-bot{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px;}
+.msg-user{background:rgba(0,200,83,0.15);border:1px solid rgba(0,200,83,0.2);align-self:flex-end;border-bottom-right-radius:4px;}
+.msg-time{font-size:10px;color:var(--dim);margin-top:4px;}
+.chat-input-area{padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;resize:none;transition:border-color 0.2s;}
+.chat-input:focus{border-color:var(--green);}
+.chat-send{background:var(--green);border:none;border-radius:10px;padding:11px 16px;cursor:pointer;font-size:16px;color:#000;transition:all 0.2s;}
+.chat-send:hover{background:var(--green-dark);}
+.chat-send:disabled{opacity:0.5;cursor:not-allowed;}
+.typing-indicator{display:none;align-items:center;gap:4px;padding:8px 0;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typing 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typing{0%,100%{opacity:0.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-4px);}}
+
+/* FAB CHAT MOBILE */
+.chat-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--green);border:none;font-size:24px;cursor:pointer;box-shadow:0 8px 24px rgba(0,200,83,0.4);display:none;align-items:center;justify-content:center;z-index:100;}
+.chat-modal{position:fixed;inset:0;background:var(--surface);z-index:150;display:none;flex-direction:column;}
+.chat-modal.open{display:flex;}
+.chat-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;z-index:1;}
+
+/* NOTIF BADGE */
+.notif{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+/* SECTION */
+.section-block{margin-bottom:32px;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="logo-icon">RB</div>
+    <div class="logo-text">
+      <div class="logo-title">Rating Bancário Pro</div>
+      <div class="logo-sub">Área do Aluno</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-user">Olá, <strong id="nav-nome">Aluno</strong></span>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="main-area">
+
+    <!-- SCORE HEADER -->
+    <div class="score-header" id="score-header">
+      <div class="score-gauge-wrap">
+        <div class="score-circle" id="score-circle" style="--pct:0%">
+          <div class="score-circle-inner">
+            <div class="score-num" id="score-num">0</div>
+            <div class="score-max">de 1000</div>
+          </div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="score-classif" id="score-classif">Sem histórico</div>
+        <div class="score-name" id="score-name">Comece agora</div>
+        <div class="score-desc" id="score-desc">Complete as primeiras ações para construir seu perfil de crédito.</div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="prog-feitas">0 ações feitas</span>
+            <span id="prog-total">de 21</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+
+        <!-- TERMÔMETRO DE CHANCES -->
+        <div id="termometro-wrap" style="margin-top:16px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,200,83,0.2);border-radius:14px;padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:700;color:#ccc;">🎯 Chances de conseguir crédito</div>
+            <div id="chances-pct" style="font-size:26px;font-weight:900;color:#00c853;">0%</div>
+          </div>
+          <div style="height:12px;border-radius:100px;background:#1a2a1a;overflow:hidden;margin-bottom:8px;">
+            <div id="chances-fill" style="height:100%;border-radius:100px;width:0%;transition:width 0.8s ease;background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#00c853);"></div>
+          </div>
+          <div id="chances-msg" style="font-size:12px;color:var(--muted);line-height:1.5;">Complete as ações para aumentar suas chances.</div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button onclick="gerarPDF()" style="background:linear-gradient(135deg,#00c853,#00a846);border:none;color:#000;font-weight:800;font-size:13px;padding:10px 20px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            📄 Gerar Relatório PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-feitas">0</div>
+        <div class="stat-label">Ações concluídas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-pts">0</div>
+        <div class="stat-label">Pontos acumulados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-pendentes">21</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+    </div>
+
+    <!-- CONQUISTAS -->
+    <div class="section-block">
+      <div class="section-title">🏆 Conquistas</div>
+      <div class="badges-row" id="badges-row"></div>
+    </div>
+
+    <!-- TAREFAS -->
+    <div class="section-block">
+      <div class="section-title">✅ Plano de Ação</div>
+      <div class="cat-tabs" id="cat-tabs"></div>
+      <div class="tasks-list" id="tasks-list"></div>
+    </div>
+
+    <!-- CONTEÚDO EDUCATIVO -->
+    <div class="section-block">
+      <div class="section-title">📚 Conteúdo Educativo</div>
+      <div class="edu-grid" id="edu-grid"></div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="section-block">
+      <div class="section-title">📋 Histórico de Ações</div>
+      <div class="hist-list" id="hist-list">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Nenhuma ação concluída ainda. Comece pelo plano acima!</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHAT PANEL DESKTOP -->
+  <div class="chat-panel" id="chat-desktop">
+    <div class="chat-header">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-info">
+        <div class="chat-name">Assistente Rating Pro</div>
+        <div class="chat-status"><span class="chat-dot"></span> Online 24h</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-msgs-desktop">
+      <div class="msg msg-bot">
+        Olá! Sou seu assistente especializado em rating bancário. Estou aqui 24h para te ajudar a construir um perfil de crédito irrecusável. Por onde quer começar? 😊
+        <div class="msg-time">Agora</div>
+      </div>
+    </div>
+    <div class="typing-indicator" id="typing-desktop">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+    </div>
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chat-input-desktop" placeholder="Tire sua dúvida..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMsg('desktop');}"></textarea>
+      <button class="chat-send" onclick="enviarMsg('desktop')" id="chat-send-desktop">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- FAB MOBILE -->
+<button class="chat-fab" id="chat-fab" onclick="document.getElementById('chat-mobile').classList.add('open')">
+  💬
+</button>
+
+<!-- CHAT MOBILE -->
+<div class="chat-modal" id="chat-mobile">
+  <button class="chat-modal-close" onclick="document.getElementById('chat-mobile').classList.remove('open')">✕</button>
+  <div class="chat-header">
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-info">
+      <div class="chat-name">Assistente Rating Pro</div>
+      <div class="chat-status"><span class="chat-dot"></span> Online 24h</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-msgs-mobile" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;">
+    <div class="msg msg-bot">
+      Olá! Sou seu assistente especializado em rating bancário. Como posso te ajudar hoje? 😊
+      <div class="msg-time">Agora</div>
+    </div>
+  </div>
+  <div class="typing-indicator" id="typing-mobile" style="padding:8px 20px;">
+    <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+  </div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chat-input-mobile" placeholder="Tire sua dúvida..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMsg('mobile');}"></textarea>
+    <button class="chat-send" onclick="enviarMsg('mobile')" id="chat-send-mobile">➤</button>
+  </div>
+</div>
+
+<!-- MODAL EDUCATIVO -->
+<div class="modal-overlay" id="edu-modal" onclick="if(event.target===this)fecharModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal()">✕</button>
+    <div class="modal-tag" id="modal-tag"></div>
+    <h2 class="modal-title" id="modal-title"></h2>
+    <div class="modal-text" id="modal-text"></div>
+  </div>
+</div>
+
+<script>
+// CONFIG SUPABASE
+const SUPABASE_URL = 'https://spunbkuphwhtdsmgbjce.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdW5ia3VwaHdodGRzbWdiamNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODAxMDUsImV4cCI6MjA5MTU1NjEwNX0.6sMy0aRklRNYIBh2ewpwVN8m_cBu564jWbKjnXeuMRQ';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let progresso = {}; // {taskId: {done, date}}
+let historico = [];
+
+// ===================== DADOS =====================
+const TAREFAS = [
+  // Documentação
+  {id:'doc1',cat:'Documentação',nome:'Regularizar CPF na Receita Federal',desc:'Acesse cpf.receita.fazenda.gov.br, consulte a situação do seu CPF e resolva qualquer pendência (declaração de IR em atraso, dados desatualizados). CPF irregular bloqueia automaticamente qualquer análise bancária.',pts:80,impacto:'CRÍTICO'},
+  {id:'doc2',cat:'Documentação',nome:'Atualizar RG/CNH em todos os bancos onde tem conta',desc:'Leve seu RG ou CNH atualizado (dentro do prazo de validade) pessoalmente ou pelo app de cada banco onde você é correntista. Acesse também o site do Serasa (serasa.com.br) e atualize seus dados cadastrais. Documentos vencidos travam análises automatizadas.',pts:60,impacto:'ALTO'},
+  {id:'doc3',cat:'Documentação',nome:'Enviar comprovante de endereço ao banco correntista',desc:'Use conta de luz, água, gás ou telefone fixo com no máximo 90 dias de emissão, em nome do titular. Acesse o app ou vá à agência do banco onde você tem conta corrente e atualize o comprovante. Se seu nome não constar na conta, use declaração de residência com firma reconhecida.',pts:50,impacto:'ALTO'},
+  {id:'doc4',cat:'Documentação',nome:'Comprovar renda perante seu banco principal',desc:'Empregado CLT: leve os 3 últimos holerites + carteira de trabalho. Autônomo/MEI: apresente DECORE emitido por contador, extrato de faturamento ou declaração de IR. Vá à agência ou envie pelo app e solicite atualização cadastral de renda. Renda comprovada aumenta diretamente seu limite de crédito.',pts:70,impacto:'CRÍTICO'},
+  {id:'doc5',cat:'Documentação',nome:'Completar 100% dos dados cadastrais no banco',desc:'Acesse o app ou agência do seu banco principal e preencha: e-mail atualizado, celular com WhatsApp, estado civil, profissão, dados do cônjuge (se casado) e renda mensal. Cadastros incompletos reduzem o score interno automaticamente.',pts:40,impacto:'MÉDIO'},
+  // Dívidas
+  {id:'div1',cat:'Dívidas',nome:'Quitar ou renegociar dívidas no banco correntista',desc:'Consulte no app ou agência se há algum débito em aberto (empréstimo, cartão, cheque especial). Priorize negociar diretamente com o gerente — bancos costumam oferecer desconto de até 80% para clientes que negociam presencialmente. Este é o fator de maior peso no seu rating interno.',pts:150,impacto:'CRÍTICO'},
+  {id:'div2',cat:'Dívidas',nome:'Limpar restrições no Serasa e SPC',desc:'Acesse serasa.com.br ou baixe o app Serasa para consultar todas as dívidas negativadas. Negocie diretamente pelo app (Serasa Limpa Nome) ou acesse consumidor.gov.br. Após quitação, exija carta de quitação por escrito e guarde o comprovante — a baixa deve ocorrer em até 5 dias úteis.',pts:120,impacto:'CRÍTICO'},
+  {id:'div3',cat:'Dívidas',nome:'Zerar e não usar o cheque especial por 60 dias',desc:'Transfira o valor do cheque especial em aberto para zerar o saldo negativo. Se não tiver recursos, negocie uma linha de crédito pessoal com taxa menor (2–3% a.m.) para substituir o especial (8–12% a.m.). Mantenha saldo positivo por 60 dias seguidos — isso já começa a melhorar sua avaliação.',pts:90,impacto:'CRÍTICO'},
+  {id:'div4',cat:'Dívidas',nome:'Pagar fatura do cartão de crédito integralmente',desc:'Evite o pagamento mínimo ou parcial — o rotativo é sinalizado negativamente ao banco todo mês que ocorre. Configure débito automático da fatura completa ou pague manualmente até o vencimento. Se não conseguir pagar tudo, negocie parcelamento sem juros diretamente com o banco.',pts:80,impacto:'ALTO'},
+  {id:'div5',cat:'Dívidas',nome:'Consultar e monitorar seu histórico no SCR (Banco Central)',desc:'Acesse registrato.bcb.gov.br com sua conta Gov.br, vá em "Relatório de Crédito" e baixe seu extrato do SCR. Verifique se há registros incorretos de dívidas ou consultas indevidas. Em caso de erro, protocole contestação diretamente no site do Banco Central.',pts:60,impacto:'ALTO'},
+  // Movimentação
+  {id:'mov1',cat:'Movimentação',nome:'Domiciliar salário ou renda principal na conta',desc:'Solicite ao seu RH que deposite o salário na conta do banco que deseja melhorar o rating. Se for autônomo, direcione seus recebimentos de clientes (PIX, TED) para essa conta. Crédito regular de renda é o principal indicador de saúde financeira para o banco.',pts:100,impacto:'CRÍTICO'},
+  {id:'mov2',cat:'Movimentação',nome:'Cadastrar contas fixas em débito automático',desc:'No app do banco, cadastre pagamentos recorrentes em débito automático: conta de luz, água, internet, telefone, condomínio. Isso demonstra regularidade e elimina o risco de esquecimento. Cada débito pago em dia é registrado positivamente no histórico interno.',pts:50,impacto:'MÉDIO'},
+  {id:'mov3',cat:'Movimentação',nome:'Manter saldo médio mensal positivo',desc:'Evite deixar a conta zerada ou negativa em qualquer dia do mês. O banco calcula a média diária do saldo — mesmo que você gaste tudo no final do mês, os dias com saldo positivo contam. Meta: manter pelo menos R$500 de saldo médio mensal.',pts:70,impacto:'ALTO'},
+  {id:'mov4',cat:'Movimentação',nome:'Movimentar a conta com frequência (mínimo 10 transações/mês)',desc:'Realize PIX, pagamentos de boletos, compras no débito ou TED regularmente. Contas ativas com ao menos 10 transações mensais são classificadas como relacionamento de qualidade pelo banco. Contas paradas são tratadas como "clientes inativos" nas análises de crédito.',pts:40,impacto:'MÉDIO'},
+  {id:'mov5',cat:'Movimentação',nome:'Investir no próprio banco (CDB, poupança ou fundo)',desc:'Aplique qualquer valor, mesmo que pequeno, em um produto de investimento do banco (CDB, poupança, fundo DI). Acesse o app → Investimentos e faça a aplicação. Clientes investidores têm relacionamento valorizado e acesso prioritário a crédito com taxas melhores.',pts:80,impacto:'ALTO'},
+  // Crédito
+  {id:'cre1',cat:'Crédito',nome:'Ativar o Cadastro Positivo',desc:'Acesse gestaopositivaserasa.com.br ou o app do Serasa e autorize o compartilhamento do seu histórico de pagamentos em dia. É gratuito e pode elevar seu score em até 80 pontos em 6 meses. Bancos que consultam o Cadastro Positivo conseguem ver que você paga contas regularmente.',pts:90,impacto:'ALTO'},
+  {id:'cre2',cat:'Crédito',nome:'Usar cartão de crédito entre 20% e 50% do limite',desc:'Use o cartão todo mês, mas mantenha o gasto entre 20% e 50% do limite disponível. Pague 100% da fatura até o vencimento. Exemplo: limite de R$2.000 → gaste entre R$400 e R$1.000/mês. Esse padrão constrói histórico de crédito positivo e sinaliza uso responsável.',pts:70,impacto:'ALTO'},
+  {id:'cre3',cat:'Crédito',nome:'Evitar consultas de crédito em múltiplos bancos',desc:'Cada vez que um banco consulta seu CPF para análise de crédito, o registro fica no SCR por 6 meses. Muitas consultas em pouco tempo sinalizam desespero financeiro. Se precisar de crédito, escolha 1 ou 2 instituições e negocie diretamente — não "atire para todos os lados".',pts:50,impacto:'MÉDIO'},
+  // Relacionamento
+  {id:'rel1',cat:'Relacionamento',nome:'Contratar seguro de vida ou residencial pelo banco',desc:'Consulte no app ou com seu gerente as opções de seguro de vida, residencial ou prestamista. Mesmo seguros de ticket baixo (R$20–50/mês) ampliam seu portfólio de produtos e elevam sua classificação de relacionamento, melhorando o tratamento nas análises de crédito.',pts:60,impacto:'MÉDIO'},
+  {id:'rel2',cat:'Relacionamento',nome:'Agendar reunião presencial com gerente de relacionamento',desc:'Ligue ou acesse o app para agendar uma visita à agência. Leve todos os documentos atualizados (RG, comprovante de endereço, comprovante de renda) e apresente-os pessoalmente ao gerente. Clientes que aparecem na agência têm análises manuais priorizadas e condições especiais.',pts:40,impacto:'BAIXO'},
+  {id:'rel3',cat:'Relacionamento',nome:'Aderir à previdência privada do banco',desc:'Consulte no app ou com seu gerente os planos de previdência PGBL ou VGBL disponíveis. Contribuições mensais, mesmo pequenas (R$50–100/mês), fortalecem o relacionamento de longo prazo, aumentam seu tempo de relacionamento com o banco e melhoram sua classificação de cliente.',pts:70,impacto:'MÉDIO'},
+];
+
+const CATEGORIAS = ['Todas','Documentação','Dívidas','Movimentação','Crédito','Relacionamento'];
+
+const BADGES = [
+  {id:'b1',emoji:'🚀',nome:'Primeiro Passo',desc:'1ª ação concluída',cond: p => Object.keys(p).length >= 1},
+  {id:'b2',emoji:'📋',nome:'Documentado',desc:'Documentação 100%',cond: p => ['doc1','doc2','doc3','doc4','doc5'].every(id => p[id]?.done)},
+  {id:'b3',emoji:'💸',nome:'Zerou as Dívidas',desc:'Todas as dívidas ok',cond: p => ['div1','div2','div3','div4','div5'].every(id => p[id]?.done)},
+  {id:'b4',emoji:'⚡',nome:'Metade do Caminho',desc:'760+ pontos',cond: p => calcScore(p) >= 760},
+  {id:'b5',emoji:'👑',nome:'Perfil Completo',desc:'Score Excelente',cond: p => calcScore(p) >= 820},
+];
+
+const ARTIGOS = [
+  {tag:'EDUCATIVO',tagColor:'#4ade80',titulo:'Como o banco calcula seu rating interno',desc:'Os 5 pilares que determinam sua nota: histórico, endividamento, tempo, produtos e consultas.',texto:'Cada banco possui modelo de scoring próprio, geralmente composto por 5 pilares:\n\n• Histórico de pagamentos (~35%): pagamentos em dia são o fator mais importante.\n• Nível de endividamento (~30%): quanto você deve em relação ao que ganha.\n• Tempo de relacionamento (~15%): clientes antigos têm vantagem nas análises.\n• Diversidade de produtos (~10%): conta, cartão, seguro, previdência — cada produto conta.\n• Novas consultas de crédito (~10%): muitas consultas ao CPF em pouco tempo é sinal negativo.\n\nMelhorar cada pilar sistematicamente influencia diretamente o rating interno do banco.'},
+  {tag:'DICA PRÁTICA',tagColor:'#4ade80',titulo:'O que é o Cadastro Positivo e por que ativar',desc:'Como o Cadastro Positivo pode elevar seu score em até 80 pontos em apenas 6 meses.',texto:'O Cadastro Positivo registra seus pagamentos em dia — não apenas dívidas. Ativando-o, bancos e birôs conseguem ver que você paga contas regularmente, mesmo sem muitos produtos de crédito.\n\nIsso pode aumentar seu score em até 80 pontos em 6 meses.\n\nAcesse gestaopositivaserasa.com.br para ativar gratuitamente. É rápido, gratuito e pode fazer uma diferença enorme no seu perfil de crédito.'},
+  {tag:'CRONOGRAMA',tagColor:'#fbbf24',titulo:'Prazo realista para ver melhora no rating',desc:'Quanto tempo cada ação leva para impactar seu score de verdade.',texto:'Regularização de documentos: efeito imediato (1–7 dias).\n\nLimpeza de negativações: 5 dias úteis após quitação.\n\nConstrução de histórico positivo (movimentação, pagamentos em dia): 3 a 6 meses para ser capturada pelo score interno do banco.\n\nNão existe atalho, mas cada ação soma. O segredo é começar certo e ser consistente.'},
+  {tag:'ALERTA',tagColor:'#f87171',titulo:'Cheque especial: o vilão silencioso do rating',desc:'Por que usar o cheque especial pode destruir seu rating mesmo que você pague em dia.',texto:'Usar o cheque especial por mais de 15 dias corridos no mês é um sinal negativo forte nos sistemas bancários. Mesmo pagando, o banco registra a utilização.\n\nPara quem usa frequentemente: negocie uma linha de crédito pessoal com taxa menor (2–3% a.m. vs 8–12% a.m. do especial) e use para zerar o especial de vez.\n\nSaldo positivo por 60 dias seguidos já começa a mudar sua avaliação internamente.'},
+  {tag:'ESTRATÉGIA',tagColor:'#c4b5fd',titulo:'Como negociar dívidas de forma estratégica',desc:'O passo a passo para quitar dívidas e garantir que o banco registre a quitação corretamente.',texto:'Antes de pagar qualquer dívida em atraso, peça a carta de quitação por escrito.\n\nApós quitação, o banco tem até 5 dias úteis para retirar a restrição do Serasa/SCR. Guarde o comprovante por pelo menos 5 anos.\n\nPriorize dívidas com o banco em que você é correntista — impactam direta e imediatamente o rating interno. Dívidas com outros bancos e birôs vêm em seguida.'},
+  {tag:'ESTRATÉGIA',tagColor:'#c4b5fd',titulo:'A estratégia do cartão para construir histórico',desc:'Como usar o cartão de crédito da forma certa para turbinar seu score em 6 meses.',texto:'Sem cartão de crédito: comece com um cartão consignado ou pré-pago com opção de crédito.\n\nUse entre 20% e 50% do limite todo mês e pague 100% da fatura. Após 6 meses de histórico limpo, solicite revisão de limite.\n\nUm ano de histórico positivo no cartão equivale, em termos de score, a 2 anos de conta corrente simples. É o ativo mais valioso para construir seu rating rapidamente.'},
+];
+
+// ===================== CHANCES DE CRÉDITO =====================
+function calcChances(feitas) {
+  const total = TAREFAS.length; // 21
+  const pct = Math.round((feitas / total) * 99) + (feitas === total ? 0 : 0);
+  const final = feitas === 0 ? 0 : feitas === total ? 99 : Math.max(5, Math.round((feitas / total) * 99));
+
+  let cor, msg;
+  if (final < 20)       { cor = '#f87171'; msg = 'Perfil muito fraco. Complete as ações críticas para aumentar suas chances.'; }
+  else if (final < 40)  { cor = '#fb923c'; msg = 'Chances baixas. Foque nas ações de Dívidas e Documentação primeiro.'; }
+  else if (final < 60)  { cor = '#fbbf24'; msg = 'Chances moderadas. Continue evoluindo — você está no caminho certo!'; }
+  else if (final < 80)  { cor = '#4ade80'; msg = 'Boas chances! Seu perfil está sólido. Complete as ações restantes para maximizar.'; }
+  else if (final < 99)  { cor = '#00c853'; msg = 'Chances muito altas! Seu perfil de crédito está excelente.'; }
+  else                  { cor = '#00c853'; msg = '🏆 Perfil completo! Você tem as maiores chances possíveis de conseguir crédito.'; }
+
+  return { pct: final, cor, msg };
+}
+
+// ===================== GERAR PDF =====================
+function gerarPDF() {
+  const feitas = TAREFAS.filter(t => progresso[t.id]?.done);
+  const score = calcScore(progresso);
+  const classif = getClassif(score);
+  const chances = calcChances(feitas.length);
+  const nome = document.getElementById('nav-nome').textContent;
+  const hoje = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+
+  // Agrupar por categoria
+  const cats = {};
+  feitas.forEach(t => {
+    if (!cats[t.cat]) cats[t.cat] = [];
+    cats[t.cat].push(t);
+  });
+
+  const catIcons = { Documentação: '📄', Dívidas: '💸', Movimentação: '💳', Crédito: '📈', Relacionamento: '🤝' };
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Rating Bancário — ${nome}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; font-size: 13px; }
+  .header { background: linear-gradient(135deg, #0a2010, #0d2e0d); color: white; padding: 36px 40px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .logo { font-size: 22px; font-weight: 900; color: #00c853; }
+  .logo-sub { font-size: 11px; color: #6b9b7b; margin-top: 2px; }
+  .data { font-size: 11px; color: #6b9b7b; text-align: right; }
+  .nome-aluno { margin-top: 20px; font-size: 15px; color: #ccc; }
+  .nome-aluno strong { color: white; font-size: 18px; }
+
+  .score-section { display: flex; gap: 24px; padding: 28px 40px; background: #f8faf8; border-bottom: 2px solid #e5e7eb; }
+  .score-box { text-align: center; background: white; border: 2px solid #e5e7eb; border-radius: 14px; padding: 20px 28px; }
+  .score-num { font-size: 48px; font-weight: 900; color: #00a846; line-height: 1; }
+  .score-label { font-size: 11px; color: #6b7280; margin-top: 4px; font-weight: 700; text-transform: uppercase; }
+  .score-classif { font-size: 14px; font-weight: 800; margin-top: 6px; color: #00a846; }
+
+  .chances-box { flex: 1; background: white; border: 2px solid #e5e7eb; border-radius: 14px; padding: 20px 24px; }
+  .chances-title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 10px; }
+  .chances-pct { font-size: 36px; font-weight: 900; color: #00a846; }
+  .chances-bar-bg { height: 12px; border-radius: 100px; background: #e5e7eb; margin: 10px 0; overflow: hidden; }
+  .chances-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #00c853); }
+  .chances-msg { font-size: 12px; color: #6b7280; line-height: 1.5; }
+
+  .stats-row { display: flex; gap: 16px; padding: 20px 40px; background: white; border-bottom: 1px solid #e5e7eb; }
+  .stat { flex: 1; text-align: center; padding: 14px; background: #f8faf8; border-radius: 10px; }
+  .stat-num { font-size: 26px; font-weight: 900; color: #00a846; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+  .content { padding: 28px 40px; }
+  .section-title { font-size: 15px; font-weight: 800; color: #0a2010; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #00c853; display: flex; align-items: center; gap: 8px; }
+  .cat-block { margin-bottom: 28px; }
+  .cat-title { font-size: 13px; font-weight: 800; color: #374151; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .action-item { background: #f8faf8; border-left: 4px solid #00c853; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 8px; }
+  .action-name { font-size: 13px; font-weight: 700; color: #0a2010; margin-bottom: 4px; }
+  .action-desc { font-size: 11px; color: #6b7280; line-height: 1.6; }
+  .action-meta { display: flex; gap: 12px; margin-top: 6px; }
+  .action-pts { font-size: 11px; font-weight: 800; color: #00a846; }
+  .action-impact { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
+  .impact-CRÍTICO { background: #fee2e2; color: #991b1b; }
+  .impact-ALTO { background: #fef3c7; color: #92400e; }
+  .impact-MÉDIO { background: #d1fae5; color: #065f46; }
+  .impact-BAIXO { background: #f3f4f6; color: #6b7280; }
+  .action-date { font-size: 10px; color: #9ca3af; margin-left: auto; }
+
+  .empty-state { text-align: center; padding: 40px; color: #9ca3af; font-size: 13px; }
+  .footer { background: #f8faf8; border-top: 1px solid #e5e7eb; padding: 20px 40px; text-align: center; font-size: 11px; color: #9ca3af; margin-top: 20px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="logo">Rating Bancário Pro</div>
+      <div class="logo-sub">Relatório de Perfil de Crédito</div>
+    </div>
+    <div class="data">Emitido em<br><strong style="color:white">${hoje}</strong></div>
+  </div>
+  <div class="nome-aluno">Relatório de: <strong>${nome}</strong></div>
+</div>
+
+<div class="score-section">
+  <div class="score-box">
+    <div class="score-num">${score}</div>
+    <div class="score-label">Score Rating</div>
+    <div class="score-classif">${classif.nome}</div>
+  </div>
+  <div class="chances-box">
+    <div class="chances-title">🎯 Chances de conseguir crédito</div>
+    <div class="chances-pct">${chances.pct}%</div>
+    <div class="chances-bar-bg">
+      <div class="chances-bar-fill" style="width:${chances.pct}%"></div>
+    </div>
+    <div class="chances-msg">${chances.msg}</div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-num">${feitas.length}</div>
+    <div class="stat-label">Ações Concluídas</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">${21 - feitas.length}</div>
+    <div class="stat-label">Ações Pendentes</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">${feitas.reduce((s,t) => s + t.pts, 0)}</div>
+    <div class="stat-label">Pontos Acumulados</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">${Math.round((feitas.length / 21) * 100)}%</div>
+    <div class="stat-label">Plano Concluído</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="section-title">✅ Ações Realizadas (${feitas.length} de 21)</div>
+  ${feitas.length === 0 ? '<div class="empty-state">Nenhuma ação concluída ainda.</div>' :
+    Object.entries(cats).map(([cat, tarefas]) => `
+      <div class="cat-block">
+        <div class="cat-title">${catIcons[cat] || '📌'} ${cat} — ${tarefas.length} ação${tarefas.length > 1 ? 'ões' : ''}</div>
+        ${tarefas.map(t => {
+          const data = progresso[t.id]?.date ? new Date(progresso[t.id].date).toLocaleDateString('pt-BR') : '';
+          return `<div class="action-item">
+            <div class="action-name">✓ ${t.nome}</div>
+            <div class="action-desc">${t.desc}</div>
+            <div class="action-meta">
+              <span class="action-pts">+${t.pts} pts</span>
+              <span class="action-impact impact-${t.impacto}">${t.impacto}</span>
+              ${data ? `<span class="action-date">Concluída em ${data}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `).join('')
+  }
+</div>
+
+<div class="footer">
+  Rating Bancário Pro — Relatório gerado em ${hoje} · Este documento é de uso pessoal e confidencial.
+</div>
+
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 800);
+}
+
+// ===================== INIT =====================
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  currentUser = session.user;
+
+  // Buscar perfil
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  console.log('VERSAO_3 | role:', profile?.role);
+  if (profile?.role === 'admin' || profile?.role === 'administrador') { window.location.replace('admin.html'); return; }
+  document.getElementById('nav-nome').textContent = profile?.nome || currentUser.email.split('@')[0];
+
+  // Carregar progresso
+  const { data: prog } = await sb.from('progresso').select('*').eq('user_id', currentUser.id);
+  if (prog) {
+    prog.forEach(p => { progresso[p.task_id] = { done: true, date: p.created_at }; });
+  }
+
+  // Carregar histórico
+  const { data: hist } = await sb.from('progresso').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(20);
+  historico = hist || [];
+
+  renderAll();
+}
+
+// ===================== CÁLCULO =====================
+function calcScore(prog) {
+  const pts = TAREFAS.filter(t => prog[t.id]?.done).reduce((a, t) => a + t.pts, 0);
+  return Math.round((pts / 1520) * 1000);
+}
+
+function getClassif(score) {
+  if (score < 350) return { nome: 'Sem histórico', cor: '#6b7280', bg: 'rgba(107,114,128,0.15)', desc: 'Cadastro incompleto ou sem ações realizadas' };
+  if (score < 500) return { nome: 'Ruim', cor: '#f87171', bg: 'rgba(248,113,113,0.15)', desc: 'Dívidas críticas e documentação pendente' };
+  if (score < 600) return { nome: 'Regular', cor: '#fb923c', bg: 'rgba(251,146,60,0.15)', desc: 'Documentação ok, mas histórico fraco' };
+  if (score < 700) return { nome: 'Bom', cor: '#fbbf24', bg: 'rgba(251,191,36,0.15)', desc: 'Ações básicas concluídas, movimentação crescendo' };
+  if (score < 820) return { nome: 'Muito Bom', cor: '#4ade80', bg: 'rgba(74,222,128,0.15)', desc: 'Perfil sólido, endividamento controlado' };
+  return { nome: 'Excelente', cor: '#00c853', bg: 'rgba(0,200,83,0.15)', desc: 'Perfil completo, relacionamento e histórico fortes' };
+}
+
+// ===================== RENDER =====================
+let catAtiva = 'Todas';
+
+function renderAll() {
+  const score = calcScore(progresso);
+  const classif = getClassif(score);
+  const feitas = TAREFAS.filter(t => progresso[t.id]?.done).length;
+  const pts = TAREFAS.filter(t => progresso[t.id]?.done).reduce((a, t) => a + t.pts, 0);
+  const pct = Math.round((score / 1000) * 100);
+
+  // Score
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-circle').style.setProperty('--pct', pct + '%');
+  document.getElementById('score-classif').textContent = classif.nome;
+  document.getElementById('score-classif').style.background = classif.bg;
+  document.getElementById('score-classif').style.color = classif.cor;
+  document.getElementById('score-name').textContent = classif.nome;
+  document.getElementById('score-desc').textContent = classif.desc;
+  document.getElementById('progress-fill').style.width = Math.round((feitas / 21) * 100) + '%';
+  document.getElementById('prog-feitas').textContent = feitas + ' ações feitas';
+
+  // Stats
+  document.getElementById('stat-feitas').textContent = feitas;
+  document.getElementById('stat-pts').textContent = pts;
+  document.getElementById('stat-pendentes').textContent = 21 - feitas;
+
+  // Termômetro de chances
+  const chances = calcChances(feitas);
+  document.getElementById('chances-pct').textContent = chances.pct + '%';
+  document.getElementById('chances-pct').style.color = chances.cor;
+  document.getElementById('chances-fill').style.width = chances.pct + '%';
+  document.getElementById('chances-msg').textContent = chances.msg;
+
+  // Badges
+  renderBadges();
+  // Tabs
+  renderTabs();
+  // Tasks
+  renderTasks();
+  // Histórico
+  renderHistorico();
+  // Artigos
+  renderArtigos();
+}
+
+function renderBadges() {
+  const cont = document.getElementById('badges-row');
+  cont.innerHTML = BADGES.map(b => {
+    const unlocked = b.cond(progresso);
+    return `<div class="badge-card ${unlocked ? 'unlocked' : 'locked'}">
+      <div class="badge-emoji">${b.emoji}</div>
+      <div class="badge-name">${b.nome}</div>
+      <div class="badge-desc">${b.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTabs() {
+  const cont = document.getElementById('cat-tabs');
+  cont.innerHTML = CATEGORIAS.map(c => {
+    const feitas = c === 'Todas'
+      ? TAREFAS.filter(t => progresso[t.id]?.done).length
+      : TAREFAS.filter(t => t.cat === c && progresso[t.id]?.done).length;
+    const total = c === 'Todas' ? TAREFAS.length : TAREFAS.filter(t => t.cat === c).length;
+    return `<button class="cat-tab ${catAtiva === c ? 'active' : ''}" onclick="setCat('${c}')">${c} (${feitas}/${total})</button>`;
+  }).join('');
+}
+
+function setCat(cat) {
+  catAtiva = cat;
+  renderTabs();
+  renderTasks();
+}
+
+function renderTasks() {
+  const lista = catAtiva === 'Todas' ? TAREFAS : TAREFAS.filter(t => t.cat === catAtiva);
+  const cont = document.getElementById('tasks-list');
+  cont.innerHTML = lista.map(t => {
+    const done = progresso[t.id]?.done;
+    const impClass = { 'CRÍTICO': 'impact-critico', 'ALTO': 'impact-alto', 'MÉDIO': 'impact-medio', 'BAIXO': 'impact-baixo' }[t.impacto] || 'impact-baixo';
+    return `<div class="task-card ${done ? 'done' : ''}" onclick="toggleTask('${t.id}')">
+      <div class="task-checkbox">${done ? '✓' : ''}</div>
+      <div class="task-body">
+        <div class="task-name">${t.nome}</div>
+        <div class="task-desc">${t.desc}</div>
+      </div>
+      <div class="task-meta">
+        <div class="task-pts">+${t.pts} pts</div>
+        <span class="task-impact ${impClass}">${t.impacto}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistorico() {
+  const cont = document.getElementById('hist-list');
+  if (historico.length === 0) {
+    cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Nenhuma ação concluída ainda. Comece pelo plano acima!</div>';
+    return;
+  }
+  cont.innerHTML = historico.map(h => {
+    const tarefa = TAREFAS.find(t => t.id === h.task_id);
+    if (!tarefa) return '';
+    const data = new Date(h.created_at).toLocaleString('pt-BR');
+    return `<div class="hist-item">
+      <div class="hist-icon">✅</div>
+      <div class="hist-info">
+        <div class="hist-name">${tarefa.nome}</div>
+        <div class="hist-date">${data}</div>
+      </div>
+      <div class="hist-pts">+${tarefa.pts} pts</div>
+    </div>`;
+  }).join('');
+}
+
+function renderArtigos() {
+  const cont = document.getElementById('edu-grid');
+  cont.innerHTML = ARTIGOS.map((a, i) => `
+    <div class="edu-card" onclick="abrirArtigo(${i})">
+      <div class="edu-tag" style="color:${a.tagColor}">${a.tag}</div>
+      <div class="edu-title">${a.titulo}</div>
+      <div class="edu-desc">${a.desc}</div>
+    </div>`).join('');
+}
+
+// ===================== TOGGLE TAREFA =====================
+async function toggleTask(taskId) {
+  const done = progresso[taskId]?.done;
+  if (done) {
+    // Desmarcar
+    delete progresso[taskId];
+    historico = historico.filter(h => h.task_id !== taskId);
+    await sb.from('progresso').delete().eq('user_id', currentUser.id).eq('task_id', taskId);
+  } else {
+    // Marcar
+    const now = new Date().toISOString();
+    progresso[taskId] = { done: true, date: now };
+    historico.unshift({ task_id: taskId, created_at: now });
+    await sb.from('progresso').insert({ user_id: currentUser.id, task_id: taskId });
+  }
+  renderAll();
+}
+
+// ===================== ARTIGOS =====================
+function abrirArtigo(i) {
+  const a = ARTIGOS[i];
+  document.getElementById('modal-tag').textContent = a.tag;
+  document.getElementById('modal-tag').style.color = a.tagColor;
+  document.getElementById('modal-title').textContent = a.titulo;
+  document.getElementById('modal-text').innerHTML = a.texto.replace(/\n/g, '<br>');
+  document.getElementById('edu-modal').classList.add('open');
+}
+function fecharModal() { document.getElementById('edu-modal').classList.remove('open'); }
+
+// ===================== CHAT IA =====================
+let chatHistoryDesktop = [];
+let chatHistoryMobile = [];
+
+async function enviarMsg(tipo) {
+  const inputId = `chat-input-${tipo}`;
+  const msgsId = `chat-msgs-${tipo}`;
+  const typingId = `typing-${tipo}`;
+  const sendId = `chat-send-${tipo}`;
+  const input = document.getElementById(inputId);
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  const msgs = document.getElementById(msgsId);
+  const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // Adicionar mensagem do usuário
+  msgs.innerHTML += `<div class="msg msg-user">${msg}<div class="msg-time">${now}</div></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Typing
+  const typing = document.getElementById(typingId);
+  typing.style.display = 'flex';
+  document.getElementById(sendId).disabled = true;
+
+  const history = tipo === 'desktop' ? chatHistoryDesktop : chatHistoryMobile;
+  history.push({ role: 'user', content: msg });
+
+  try {
+    const score = calcScore(progresso);
+    const feitas = TAREFAS.filter(t => progresso[t.id]?.done).length;
+    const classif = getClassif(score);
+
+    const systemPrompt = `Você é um assistente especializado em rating bancário e crédito pessoal, integrado na plataforma Rating Bancário Pro. Seu tom é profissional, direto e encorajador.
+
+Contexto do aluno atual:
+- Score estimado: ${score}/1000
+- Classificação: ${classif.nome}
+- Ações concluídas: ${feitas}/21
+- Pontos acumulados: ${TAREFAS.filter(t => progresso[t.id]?.done).reduce((a,t) => a+t.pts, 0)}/1520
+
+Suas responsabilidades:
+- Orientar sobre as 21 tarefas do plano de ação
+- Explicar como melhorar o rating bancário
+- Responder dúvidas sobre Serasa, SPC, SCR, Cadastro Positivo
+- Motivar o aluno a continuar o progresso
+- Dar dicas práticas e personalizadas
+
+Seja conciso (máximo 3 parágrafos por resposta) e sempre termine com uma ação prática.`;
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'system', content: systemPrompt }, ...history]
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.resposta || 'Desculpe, houve um erro. Tente novamente.';
+    history.push({ role: 'assistant', content: reply });
+
+    typing.style.display = 'none';
+    document.getElementById(sendId).disabled = false;
+    const replyTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    msgs.innerHTML += `<div class="msg msg-bot">${reply.replace(/\n/g,'<br>')}<div class="msg-time">${replyTime}</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // Salvar no banco
+    await sb.from('mensagens_chat').insert({
+      user_id: currentUser.id,
+      pergunta: msg,
+      resposta: reply
+    });
+
+  } catch(e) {
+    typing.style.display = 'none';
+    document.getElementById(sendId).disabled = false;
+    msgs.innerHTML += `<div class="msg msg-bot">Erro ao conectar com o assistente. Verifique sua conexão e tente novamente.<div class="msg-time">Agora</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+async function sair() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>

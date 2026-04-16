@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Rating Bancário Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#080f08;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;position:relative;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(0,200,83,0.1) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(0,150,60,0.08) 0%,transparent 50%);pointer-events:none;}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,83,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,83,0.04) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 20%,transparent 75%);pointer-events:none;}
+.card{background:#0f1a0f;border:1px solid rgba(0,200,83,0.15);border-radius:20px;padding:48px 44px;width:100%;max-width:420px;position:relative;z-index:2;box-shadow:0 24px 80px rgba(0,0,0,0.5);}
+.logo{display:flex;align-items:center;gap:14px;margin-bottom:36px;justify-content:center;}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#00c853,#00a846);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#000;box-shadow:0 8px 24px rgba(0,200,83,0.35);}
+.logo-text{display:flex;flex-direction:column;line-height:1.2;}
+.logo-title{font-size:18px;font-weight:800;}
+.logo-sub{font-size:11px;color:#6b9b7b;font-weight:500;letter-spacing:0.05em;}
+.card-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:6px;}
+.card-sub{font-size:14px;color:#6b9b7b;text-align:center;margin-bottom:32px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field-label{font-size:11px;font-weight:700;color:#6b9b7b;text-transform:uppercase;letter-spacing:0.08em;}
+.field input{width:100%;background:#162016;border:1px solid rgba(0,200,83,0.12);border-radius:10px;padding:13px 16px;font-size:14px;color:#fff;font-family:'Inter',sans-serif;transition:border-color 0.2s;outline:none;}
+.field input:focus{border-color:#00c853;background:#1c2a1c;}
+.field input::placeholder{color:#3a5a3a;}
+.btn-login{width:100%;padding:14px;background:linear-gradient(135deg,#00c853,#00a846);color:#000;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:0.02em;margin-top:8px;box-shadow:0 4px 20px rgba(0,200,83,0.3);transition:all 0.2s;}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,200,83,0.4);}
+.btn-login:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.btn-secondary{width:100%;padding:13px;background:none;color:#00c853;border:1px solid rgba(0,200,83,0.3);border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.02em;margin-top:10px;transition:all 0.2s;}
+.btn-secondary:hover{background:rgba(0,200,83,0.08);border-color:#00c853;}
+.btn-link{background:none;border:none;color:#6b9b7b;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;transition:color 0.2s;font-family:'Inter',sans-serif;display:block;margin:14px auto 0;text-align:center;}
+.btn-link:hover{color:#00c853;}
+.error-msg{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#f87171;font-weight:600;text-align:center;margin-top:16px;display:none;}
+.success-msg{background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#4ade80;font-weight:600;text-align:center;margin-top:16px;display:none;}
+.card-footer{margin-top:32px;padding-top:24px;border-top:1px solid rgba(0,200,83,0.08);text-align:center;font-size:11px;color:#3a5a3a;}
+.toggle-senha{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#3a5a3a;cursor:pointer;font-size:16px;transition:color 0.2s;padding:0;}
+.toggle-senha:hover{color:#00c853;}
+.field-wrap{position:relative;}
+.screen{display:none;}
+.screen.active{display:block;}
+.back-btn{background:none;border:none;color:#6b9b7b;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;margin-bottom:24px;padding:0;transition:color 0.2s;}
+.back-btn:hover{color:#00c853;}
+.pendente-msg{background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.25);border-radius:12px;padding:20px;text-align:center;margin-top:8px;}
+.pendente-msg .icon{font-size:32px;margin-bottom:10px;}
+.pendente-msg p{font-size:14px;color:#fbbf24;font-weight:600;line-height:1.6;}
+.pendente-msg small{font-size:12px;color:#6b9b7b;}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">RB</div>
+    <div class="logo-text">
+      <span class="logo-title">Rating Bancário Pro</span>
+      <span class="logo-sub">Plataforma de Crédito</span>
+    </div>
+  </div>
+
+  <!-- TELA: LOGIN -->
+  <div class="screen active" id="screen-login">
+    <h1 class="card-title">Bem-vindo de volta</h1>
+    <p class="card-sub">Acesse sua conta para continuar sua jornada</p>
+    <div class="field">
+      <label class="field-label">E-mail</label>
+      <input type="email" id="email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label class="field-label">Senha</label>
+      <div class="field-wrap">
+        <input type="password" id="senha" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+        <button class="toggle-senha" onclick="toggleSenha()" id="btn-toggle">👁</button>
+      </div>
+    </div>
+    <button class="btn-login" onclick="fazerLogin()" id="btn-login">Entrar na plataforma</button>
+    <button class="btn-secondary" onclick="showScreen('cadastro')">Criar minha conta</button>
+    <button class="btn-link" onclick="showScreen('recuperar')">Esqueci minha senha</button>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="card-footer">Rating Bancário Pro &mdash; Acesso exclusivo para alunos</div>
+  </div>
+
+  <!-- TELA: CADASTRO -->
+  <div class="screen" id="screen-cadastro">
+    <button class="back-btn" onclick="showScreen('login')">← Voltar</button>
+    <h1 class="card-title">Criar conta</h1>
+    <p class="card-sub">Preencha seus dados para solicitar acesso</p>
+    <div class="field">
+      <label class="field-label">Nome completo</label>
+      <input type="text" id="cad-nome" placeholder="Seu nome completo">
+    </div>
+    <div class="field">
+      <label class="field-label">E-mail</label>
+      <input type="email" id="cad-email" placeholder="seu@email.com">
+    </div>
+    <div class="field">
+      <label class="field-label">Telefone / WhatsApp</label>
+      <input type="tel" id="cad-telefone" placeholder="(00) 00000-0000">
+    </div>
+    <div class="field">
+      <label class="field-label">Senha</label>
+      <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres">
+    </div>
+    <button class="btn-login" onclick="solicitarCadastro()" id="btn-cadastro">Solicitar acesso</button>
+    <div class="error-msg" id="cad-error"></div>
+    <div class="success-msg" id="cad-success"></div>
+  </div>
+
+  <!-- TELA: RECUPERAR SENHA -->
+  <div class="screen" id="screen-recuperar">
+    <button class="back-btn" onclick="showScreen('login')">← Voltar</button>
+    <h1 class="card-title">Recuperar senha</h1>
+    <p class="card-sub">Enviaremos um link de redefinição para seu e-mail</p>
+    <div class="field">
+      <label class="field-label">E-mail cadastrado</label>
+      <input type="email" id="rec-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')recuperarSenha()">
+    </div>
+    <button class="btn-login" onclick="recuperarSenha()" id="btn-recuperar">Enviar link de redefinição</button>
+    <div class="error-msg" id="rec-error"></div>
+    <div class="success-msg" id="rec-success"></div>
+  </div>
+
+</div>
+
+<script>
+var _supa = window.supabase.createClient(
+  'https://spunbkuphwhtdsmgbjce.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdW5ia3VwaHdodGRzbWdiamNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODAxMDUsImV4cCI6MjA5MTU1NjEwNX0.6sMy0aRklRNYIBh2ewpwVN8m_cBu564jWbKjnXeuMRQ'
+);
+
+// Verificar sessão ativa
+(async function() {
+  try {
+    var s = await _supa.auth.getSession();
+    if (s.data && s.data.session) {
+      var uid = s.data.session.user.id;
+      var p = await _supa.from('profiles').select('role').eq('id', uid).single();
+      if (p.data && (p.data.role === 'admin' || p.data.role === 'administrador')) {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'aluno.html';
+      }
+    }
+  } catch(e) {}
+})();
+
+// ===================== NAVEGAÇÃO ENTRE TELAS =====================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ===================== LOGIN =====================
+function toggleSenha() {
+  var input = document.getElementById('senha');
+  var btn = document.getElementById('btn-toggle');
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁'; }
+}
+
+async function fazerLogin() {
+  var email = document.getElementById('email').value.trim();
+  var senha = document.getElementById('senha').value;
+  var erro = document.getElementById('error-msg');
+  var btn = document.getElementById('btn-login');
+  erro.style.display = 'none';
+  if (!email || !senha) { erro.textContent = 'Preencha e-mail e senha.'; erro.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    var res = await _supa.auth.signInWithPassword({ email: email, password: senha });
+    if (res.error) {
+      erro.textContent = 'E-mail ou senha incorretos. Tente novamente.';
+      erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar na plataforma'; return;
+    }
+    var uid = res.data.user.id;
+    var prof = await _supa.from('profiles').select('role').eq('id', uid).single();
+    if (prof.data && (prof.data.role === 'admin' || prof.data.role === 'administrador')) {
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'aluno.html';
+    }
+  } catch(e) {
+    erro.textContent = 'Erro de conexão. Tente novamente.';
+    erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar na plataforma';
+  }
+}
+
+// ===================== CADASTRO (SOLICITAÇÃO) =====================
+async function solicitarCadastro() {
+  var nome = document.getElementById('cad-nome').value.trim();
+  var email = document.getElementById('cad-email').value.trim();
+  var telefone = document.getElementById('cad-telefone').value.trim();
+  var senha = document.getElementById('cad-senha').value;
+  var erro = document.getElementById('cad-error');
+  var ok = document.getElementById('cad-success');
+  var btn = document.getElementById('btn-cadastro');
+  erro.style.display = 'none'; ok.style.display = 'none';
+  if (!nome || !email || !senha) { erro.textContent = 'Preencha nome, e-mail e senha.'; erro.style.display = 'block'; return; }
+  if (senha.length < 6) { erro.textContent = 'A senha deve ter no mínimo 6 caracteres.'; erro.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    // Verificar se já existe solicitação pendente
+    var { data: existing } = await _supa.from('solicitacoes').select('id,status').eq('email', email).single();
+    if (existing) {
+      if (existing.status === 'pendente') {
+        erro.textContent = 'Já existe uma solicitação pendente para este e-mail. Aguarde a aprovação.';
+        erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Solicitar acesso'; return;
+      }
+      if (existing.status === 'aprovado') {
+        erro.textContent = 'Este e-mail já possui acesso. Tente fazer login.';
+        erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Solicitar acesso'; return;
+      }
+    }
+    var { error } = await _supa.from('solicitacoes').insert({ nome: nome, email: email, telefone: telefone, senha_temp: senha, status: 'pendente' });
+    if (error) throw error;
+    ok.textContent = '✅ Solicitação enviada! Assim que o administrador aprovar, você receberá acesso para entrar.';
+    ok.style.display = 'block';
+    document.getElementById('cad-nome').value = '';
+    document.getElementById('cad-email').value = '';
+    document.getElementById('cad-telefone').value = '';
+    document.getElementById('cad-senha').value = '';
+  } catch(e) {
+    erro.textContent = 'Erro ao enviar solicitação. Tente novamente.';
+    erro.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Solicitar acesso';
+}
+
+// ===================== RECUPERAR SENHA =====================
+async function recuperarSenha() {
+  var email = document.getElementById('rec-email').value.trim();
+  var erro = document.getElementById('rec-error');
+  var ok = document.getElementById('rec-success');
+  var btn = document.getElementById('btn-recuperar');
+  erro.style.display = 'none'; ok.style.display = 'none';
+  if (!email) { erro.textContent = 'Digite seu e-mail.'; erro.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    var { error } = await _supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login.html' });
+    if (error) throw error;
+    ok.textContent = '✅ Link enviado! Verifique sua caixa de entrada (e a pasta de spam).';
+    ok.style.display = 'block';
+    document.getElementById('rec-email').value = '';
+  } catch(e) {
+    erro.textContent = 'Não encontramos esse e-mail. Verifique e tente novamente.';
+    erro.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Enviar link de redefinição';
+}
+</script>
+</body>
+</html>
