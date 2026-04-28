@@ -606,7 +606,8 @@ async function excluirAluno(id, nome) {
   const data = await r.json();
   if (!r.ok || !data.ok) { alert('Erro ao excluir aluno: ' + (data.error || 'Erro desconhecido')); return; }
   todosAlunos = todosAlunos.filter(a => a.id !== id);
-  renderAlunos();
+  renderTabela();
+  renderMetrics();
   alert('✅ Aluno excluído com sucesso.');
 }
 
