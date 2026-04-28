@@ -786,10 +786,14 @@ async function aprovarSolicById(id) {
 }
 
 async function aprovarSolic(id, nome, email, senha, telefone) {
-  if (!confirm(`Aprovar acesso para ${nome} (${email})?`)) return;
+  const emailClean = (email || '').trim().toLowerCase();
+  if (!emailClean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+    alert('Email inválido: "' + email + '"'); return;
+  }
+  if (!confirm(`Aprovar acesso para ${nome} (${emailClean})?`)) return;
 
   // Criar usuário no Supabase Auth
-  const { data: authData, error: authError } = await sb.auth.signUp({ email, password: senha });
+  const { data: authData, error: authError } = await sb.auth.signUp({ email: emailClean, password: senha });
   if (authError && !authError.message.includes('already registered')) {
     alert('Erro ao criar usuário: ' + authError.message); return;
   }
@@ -797,12 +801,12 @@ async function aprovarSolic(id, nome, email, senha, telefone) {
   // Se usuário já existia no auth, buscar o id
   let uid = authData?.user?.id;
   if (!uid) {
-    const { data: p } = await sb.from('profiles').select('id').eq('email', email).single();
+    const { data: p } = await sb.from('profiles').select('id').eq('email', emailClean).single();
     uid = p?.id;
   }
 
   if (uid) {
-    await sb.from('profiles').upsert({ id: uid, email, nome, telefone, role: 'aluno', created_at: new Date().toISOString() });
+    await sb.from('profiles').upsert({ id: uid, email: emailClean, nome, telefone, role: 'aluno', created_at: new Date().toISOString() });
   }
 
   // Atualizar status da solicitação
