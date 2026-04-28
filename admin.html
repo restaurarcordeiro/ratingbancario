@@ -758,10 +758,13 @@ function renderSolic() {
     return;
   }
 
+  // Armazena dados em mapa para evitar interpolação de caracteres especiais no onclick
+  window._solicMap = Object.fromEntries(lista.map(s => [s.id, s]));
+
   el.innerHTML = lista.map(s => {
     const data = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
     const acoes = s.status === 'pendente'
-      ? `<button class="btn-aprovar" onclick="aprovarSolic('${s.id}','${s.nome}','${s.email}','${s.senha_temp}','${s.telefone||''}')">✓ Aprovar</button>
+      ? `<button class="btn-aprovar" onclick="aprovarSolicById('${s.id}')">✓ Aprovar</button>
          <button class="btn-reprovar" onclick="rejeitarSolic('${s.id}')">✕ Rejeitar</button>`
       : `<span class="status-badge status-${s.status}">${s.status === 'aprovado' ? '✓ Aprovado' : '✕ Rejeitado'}</span>`;
     return `<div class="solic-item">
@@ -774,6 +777,12 @@ function renderSolic() {
       <div class="solic-actions">${acoes}</div>
     </div>`;
   }).join('');
+}
+
+async function aprovarSolicById(id) {
+  const s = window._solicMap?.[id];
+  if (!s) { alert('Solicitação não encontrada.'); return; }
+  await aprovarSolic(s.id, s.nome, s.email, s.senha_temp, s.telefone || '');
 }
 
 async function aprovarSolic(id, nome, email, senha, telefone) {
