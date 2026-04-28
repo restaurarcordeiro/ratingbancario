@@ -377,6 +377,9 @@ tbody td{padding:14px 20px;font-size:13px;}
     <h2 class="modal-title" id="modal-nome-aluno">Detalhes do Aluno</h2>
     <div class="modal-grid" id="modal-dados-aluno"></div>
     <div id="modal-tarefas-aluno"></div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff15;display:flex;justify-content:flex-end;">
+      <button id="btn-excluir-modal" onclick="excluirAlunoModal()" style="background:#ef444422;color:#ef4444;border:1px solid #ef444444;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑 Excluir Aluno</button>
+    </div>
   </div>
 </div>
 
@@ -557,14 +560,20 @@ function renderTabela() {
       <td>${a.feitas}/${TAREFAS_TOTAL}</td>
       <td>${data}</td>
       <td><span class="${a.ativo ? 'td-status-ativo' : 'td-status-inativo'}" style="display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
-      <td><button class="btn-ver" onclick="verAluno('${a.id}')">Ver</button></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-ver" onclick="verAluno('${a.id}')">Ver</button>
+        <button class="btn-ver" style="background:#ef444422;color:#ef4444;border:1px solid #ef444444;" onclick="excluirAluno('${a.id}','${(a.nome||a.email).replace(/'/g,'')}')">Excluir</button>
+      </td>
     </tr>`;
   }).join('');
 }
 
+let _alunoModalAtual = null;
+
 function verAluno(id) {
   const a = todosAlunos.find(al => al.id === id);
   if (!a) return;
+  _alunoModalAtual = a;
   const cl = getClassif(a.score);
   document.getElementById('modal-nome-aluno').textContent = a.nome || a.email;
   document.getElementById('modal-dados-aluno').innerHTML = `
@@ -578,6 +587,26 @@ function verAluno(id) {
     <div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-val" style="color:${a.ativo ? 'var(--green)' : 'var(--red)'}">${a.ativo ? 'Ativo' : 'Inativo'}</div></div>
   `;
   document.getElementById('modal-aluno').classList.add('open');
+}
+
+function excluirAlunoModal() {
+  if (_alunoModalAtual) {
+    document.getElementById('modal-aluno').classList.remove('open');
+    excluirAluno(_alunoModalAtual.id, _alunoModalAtual.nome || _alunoModalAtual.email);
+  }
+}
+
+async function excluirAluno(id, nome) {
+  if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\n\nEssa ação é irreversível e apagará todos os dados do aluno.`)) return;
+  // Exclui progresso, mensagens e depois o perfil
+  await sb.from('progresso').delete().eq('user_id', id);
+  await sb.from('mensagens_chat').delete().eq('user_id', id);
+  const { error } = await sb.from('profiles').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir aluno: ' + error.message); return; }
+  // Tenta excluir o usuário Auth via admin (pode não estar disponível no client)
+  todosAlunos = todosAlunos.filter(a => a.id !== id);
+  renderAlunos();
+  alert('✅ Aluno excluído com sucesso.');
 }
 
 // ===================== NOVO ALUNO =====================
