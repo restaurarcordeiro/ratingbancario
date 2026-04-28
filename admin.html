@@ -598,12 +598,13 @@ function excluirAlunoModal() {
 
 async function excluirAluno(id, nome) {
   if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?\n\nEssa ação é irreversível e apagará todos os dados do aluno.`)) return;
-  // Exclui progresso, mensagens e depois o perfil
-  await sb.from('progresso').delete().eq('user_id', id);
-  await sb.from('mensagens_chat').delete().eq('user_id', id);
-  const { error } = await sb.from('profiles').delete().eq('id', id);
-  if (error) { alert('Erro ao excluir aluno: ' + error.message); return; }
-  // Tenta excluir o usuário Auth via admin (pode não estar disponível no client)
+  const r = await fetch('/api/delete-aluno', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ aluno_id: id }),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) { alert('Erro ao excluir aluno: ' + (data.error || 'Erro desconhecido')); return; }
   todosAlunos = todosAlunos.filter(a => a.id !== id);
   renderAlunos();
   alert('✅ Aluno excluído com sucesso.');
