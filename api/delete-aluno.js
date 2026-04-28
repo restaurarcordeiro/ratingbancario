@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://spunbkuphwhtdsmgbjce.supabase.co';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SERVICE_KEY = (process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdW5ia3VwaHdodGRzbWdiamNlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTk4MDEwNSwiZXhwIjoyMDkxNTU2MTA1fQ.B8PNsTkHDSTgqQsqHaEcbbb0R48Q19NcV4Dot9P1Ejo').replace(/[\r\n\s]/g, '');
 
 async function sbDelete(table, userId) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${userId}`, {
