@@ -883,7 +883,7 @@ async function confirmarTrocarSenha() {
   const data = await r.json();
 
   if (!r.ok || !data.ok) {
-    msg.textContent = '❌ Erro: ' + (data.error || 'Erro desconhecido');
+    msg.textContent = '❌ Erro: ' + (data.error || 'Erro desconhecido') + (data.detail ? ' | ' + data.detail : '');
     msg.style.color = '#f87171';
   } else {
     msg.textContent = '✅ Senha alterada com sucesso!';
