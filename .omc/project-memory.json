@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1777386649392,
+  "projectRoot": "C:\\Users\\Junio\\OneDrive\\Desktop\\ARQUITETO\\RatingBancario",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "api": {
+      "path": "api",
+      "purpose": "API routes",
+      "fileCount": 2,
+      "lastAccessed": 1777386649374,
+      "keyFiles": [
+        "chat.js",
+        "delete-aluno.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "admin.html",
+      "accessCount": 3,
+      "lastAccessed": 1777418672170,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

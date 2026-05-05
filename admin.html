@@ -377,8 +377,20 @@ tbody td{padding:14px 20px;font-size:13px;}
     <h2 class="modal-title" id="modal-nome-aluno">Detalhes do Aluno</h2>
     <div class="modal-grid" id="modal-dados-aluno"></div>
     <div id="modal-tarefas-aluno"></div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff15;display:flex;justify-content:flex-end;">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #ffffff15;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <button onclick="abrirTrocarSenha()" style="background:rgba(0,200,83,0.1);color:var(--green);border:1px solid rgba(0,200,83,0.3);padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🔑 Trocar Senha</button>
       <button id="btn-excluir-modal" onclick="excluirAlunoModal()" style="background:#ef444422;color:#ef4444;border:1px solid #ef444444;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑 Excluir Aluno</button>
+    </div>
+
+    <!-- Form trocar senha (inline) -->
+    <div id="form-trocar-senha" style="display:none;margin-top:16px;padding:16px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--green);">Nova senha para o aluno</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input id="input-nova-senha" type="text" placeholder="Mínimo 6 caracteres" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;min-width:180px;">
+        <button onclick="confirmarTrocarSenha()" style="background:linear-gradient(135deg,var(--green),var(--green-dark));color:#000;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;">Salvar</button>
+        <button onclick="document.getElementById('form-trocar-senha').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;">Cancelar</button>
+      </div>
+      <div id="msg-trocar-senha" style="font-size:12px;margin-top:8px;display:none;"></div>
     </div>
   </div>
 </div>
@@ -835,6 +847,49 @@ function showPage(id, btn) {
 async function sair() {
   await sb.auth.signOut();
   window.location.href = 'login.html';
+}
+
+// ===================== TROCAR SENHA =====================
+function abrirTrocarSenha() {
+  const form = document.getElementById('form-trocar-senha');
+  const msg = document.getElementById('msg-trocar-senha');
+  document.getElementById('input-nova-senha').value = '';
+  msg.style.display = 'none';
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function confirmarTrocarSenha() {
+  const nova_senha = document.getElementById('input-nova-senha').value.trim();
+  const msg = document.getElementById('msg-trocar-senha');
+
+  if (!nova_senha || nova_senha.length < 6) {
+    msg.textContent = '⚠️ A senha deve ter no mínimo 6 caracteres.';
+    msg.style.color = '#f87171';
+    msg.style.display = 'block';
+    return;
+  }
+
+  if (!_alunoModalAtual) return;
+
+  msg.textContent = 'Salvando...';
+  msg.style.color = 'var(--muted)';
+  msg.style.display = 'block';
+
+  const r = await fetch('/api/trocar-senha', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ aluno_id: _alunoModalAtual.id, nova_senha }),
+  });
+  const data = await r.json();
+
+  if (!r.ok || !data.ok) {
+    msg.textContent = '❌ Erro: ' + (data.error || 'Erro desconhecido');
+    msg.style.color = '#f87171';
+  } else {
+    msg.textContent = '✅ Senha alterada com sucesso!';
+    msg.style.color = 'var(--green)';
+    document.getElementById('input-nova-senha').value = '';
+  }
 }
 
 init();
