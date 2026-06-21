@@ -623,7 +623,7 @@ async function renderMetrics() {
   const receitaPropria = alunosProprios.reduce((s, a) => s + (parseFloat(a.valor_servico) || 697), 0);
 
   // Faturamento total dos afiliados
-  const { data: alunosAfil } = await sb.from('profiles').select('valor_servico').eq('role','aluno').not('afiliado_id','is',null);
+  const { data: alunosAfil } = await sb.from('profiles').select('valor_servico,created_at').eq('role','aluno').not('afiliado_id','is',null);
   const fatAfiliados = (alunosAfil || []).reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
 
   // Faturamento mensal (mês atual)
