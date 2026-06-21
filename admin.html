@@ -237,9 +237,35 @@ tbody td{padding:14px 20px;font-size:13px;}
           <div class="chart-title">Alunos cadastrados por mês</div>
           <div class="chart-wrap"><canvas id="chart-alunos"></canvas></div>
         </div>
-        <div class="chart-card">
-          <div class="chart-title">Distribuição de classificações</div>
-          <div class="chart-wrap"><canvas id="chart-classif"></canvas></div>
+        <div class="chart-card" style="overflow:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <div class="chart-title" style="margin-bottom:0;">Gestão de Afiliados</div>
+            <select id="filtro-mes-afiliados" onchange="renderGestaoAfiliados()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;">
+              <option value="todos">Todos os meses</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div style="background:var(--surface2);border-radius:10px;padding:10px 16px;flex:1;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:var(--green-soft);" id="gaff-ativos">0</div>
+              <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Afiliados ativos</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:10px 16px;flex:1;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:var(--green-soft);" id="gaff-alunos">0</div>
+              <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Alunos no período</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:10px;padding:10px 16px;flex:1;text-align:center;">
+              <div style="font-size:18px;font-weight:900;color:var(--gold);" id="gaff-receita">R$ 0</div>
+              <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">A receber (R$ 50/aluno)</div>
+            </div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">Afiliado</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">Alunos</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border);">A receber</th>
+            </tr></thead>
+            <tbody id="gaff-tabela"><tr><td colspan="3" style="text-align:center;padding:16px;color:var(--muted);">Carregando...</td></tr></tbody>
+          </table>
         </div>
         <div class="chart-card">
           <div class="chart-title">Receita acumulada (R$)</div>
@@ -623,17 +649,8 @@ function renderCharts() {
     options: { ...chartOpts }
   });
 
-  // Distribuição classificações
-  const classifs = { 'Sem histórico':0, 'Ruim':0, 'Regular':0, 'Bom':0, 'Muito Bom':0, 'Excelente':0 };
-  todosAlunos.forEach(a => { classifs[getClassif(a.score).nome]++; });
-  new Chart(document.getElementById('chart-classif'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(classifs),
-      datasets: [{ data: Object.values(classifs), backgroundColor: ['#374151','#f87171','#fb923c','#fbbf24','#4ade80','#00c853'], borderWidth: 0 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#6b9b7b', font: { family: 'Inter', size: 11 }, boxWidth: 12 } } } }
-  });
+  // Gestão de afiliados
+  await iniciarGestaoAfiliados();
 
   // Receita acumulada
   const receitaData = [];
@@ -1047,6 +1064,65 @@ function copiarLink() {
     msg.style.display = 'inline';
     setTimeout(() => { msg.style.display = 'none'; }, 2000);
   });
+}
+
+// ===================== GESTÃO AFILIADOS (DASHBOARD) =====================
+let _gaffAfiliados = [];
+let _gaffAlunos = [];
+
+async function iniciarGestaoAfiliados() {
+  const { data: afiliados } = await sb.from('profiles').select('*').eq('role','afiliado');
+  const { data: alunos } = await sb.from('profiles').select('id,nome,afiliado_id,created_at').eq('role','aluno').not('afiliado_id','is',null);
+  _gaffAfiliados = afiliados || [];
+  _gaffAlunos = alunos || [];
+
+  // Popula filtro de meses
+  const meses = {};
+  _gaffAlunos.forEach(a => {
+    const d = new Date(a.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    meses[key] = label;
+  });
+  const sel = document.getElementById('filtro-mes-afiliados');
+  Object.entries(meses).sort((a,b) => b[0].localeCompare(a[0])).forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    sel.appendChild(opt);
+  });
+
+  renderGestaoAfiliados();
+}
+
+function renderGestaoAfiliados() {
+  const mes = document.getElementById('filtro-mes-afiliados')?.value || 'todos';
+  const alunosFiltrados = mes === 'todos'
+    ? _gaffAlunos
+    : _gaffAlunos.filter(a => a.created_at?.startsWith(mes));
+
+  const afiliAtivos = _gaffAfiliados.filter(a => a.ativo !== false).length;
+  const totalAlunos = alunosFiltrados.length;
+  const aReceber = totalAlunos * 50;
+
+  document.getElementById('gaff-ativos').textContent = afiliAtivos;
+  document.getElementById('gaff-alunos').textContent = totalAlunos;
+  document.getElementById('gaff-receita').textContent = `R$ ${aReceber.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+
+  const rows = _gaffAfiliados
+    .map(aff => {
+      const alunosAff = alunosFiltrados.filter(a => a.afiliado_id === aff.id);
+      return { aff, qtd: alunosAff.length, valor: alunosAff.length * 50 };
+    })
+    .sort((a,b) => b.qtd - a.qtd)
+    .map(({ aff, qtd, valor }) => `<tr>
+      <td style="padding:6px 8px;"><strong>${aff.nome||'—'}</strong><br><small style="color:var(--muted)">${aff.slug||''}</small></td>
+      <td style="padding:6px 8px;font-weight:700;">${qtd}</td>
+      <td style="padding:6px 8px;color:var(--gold);font-weight:700;">R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    </tr>`);
+
+  document.getElementById('gaff-tabela').innerHTML = rows.length
+    ? rows.join('')
+    : '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--muted);">Nenhum dado no período</td></tr>';
 }
 
 // ===================== AFILIADOS =====================
