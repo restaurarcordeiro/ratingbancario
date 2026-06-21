@@ -574,7 +574,7 @@ async function carregarDados() {
     return { ...p, score, feitas: progAluno.length, pts, ativo, ultimaAcao: ultimaData };
   });
 
-  renderMetrics();
+  await renderMetrics();
   renderCharts();
   renderTabela();
   carregarConversas();
@@ -756,7 +756,7 @@ async function excluirAluno(id, nome) {
   if (!r.ok || !data.ok) { alert('Erro ao excluir aluno: ' + (data.error || 'Erro desconhecido')); return; }
   todosAlunos = todosAlunos.filter(a => a.id !== id);
   renderTabela();
-  renderMetrics();
+  await renderMetrics();
   alert('✅ Aluno excluído com sucesso.');
 }
 
