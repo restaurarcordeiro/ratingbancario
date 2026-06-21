@@ -1090,7 +1090,7 @@ function renderAfiliados(periodo) {
 function renderAfiliadosComFim(inicio, fim) {
   let totalPeriodo = 0, fatPeriodo = 0, fatTotal = 0;
 
-  const rows = _afiliados.map(aff => {
+  const dadosAfiliados = _afiliados.map(aff => {
     const todos = _alunosAfil.filter(a => a.afiliado_id === aff.id);
     const periodo = todos.filter(a => { const d = new Date(a.created_at); return d >= inicio && d <= fim; });
     const fatP = periodo.reduce((s,a) => s + (parseFloat(a.valor_servico)||0), 0);
@@ -1098,6 +1098,12 @@ function renderAfiliadosComFim(inicio, fim) {
     totalPeriodo += periodo.length;
     fatPeriodo += fatP;
     fatTotal += fatT;
+    return { aff, todos, periodo, fatP, fatT };
+  }).sort((a, b) => b.fatP - a.fatP);
+
+  const medalhas = ['🥇', '🥈', '🥉'];
+
+  const rows = dadosAfiliados.map(({ aff, todos, periodo, fatP, fatT }, idx) => {
     const ativo = aff.ativo !== false;
     const btnToggle = ativo
       ? `<button onclick="toggleAfiliado('${aff.id}', false)" style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">🚫 Desativar</button>`
@@ -1105,13 +1111,14 @@ function renderAfiliadosComFim(inicio, fim) {
     const statusBadge = ativo
       ? `<span style="background:rgba(0,200,83,0.12);color:var(--green-soft);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">Ativo</span>`
       : `<span style="background:rgba(248,113,113,0.12);color:#f87171;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">Inativo</span>`;
+    const rank = medalhas[idx] || `#${idx+1}`;
     return `<tr>
       <td>${statusBadge}<br><div style="margin-top:6px;">${btnToggle}</div></td>
-      <td><strong>${aff.nome||'—'}</strong><br><small style="color:var(--muted)">${aff.email||''}</small></td>
+      <td><span style="font-size:18px;margin-right:6px;">${rank}</span><strong>${aff.nome||'—'}</strong><br><small style="color:var(--muted)">${aff.email||''}</small></td>
       <td><span style="color:#4ea8ff;font-family:monospace;font-size:12px;">${aff.slug||'—'}</span></td>
       <td><strong>${periodo.length}</strong></td>
       <td>${todos.length}</td>
-      <td style="color:var(--green-soft)">R$ ${fatP.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="color:var(--green-soft)"><strong>R$ ${fatP.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></td>
       <td style="color:var(--green-soft)">R$ ${fatT.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
     </tr>`;
   });
