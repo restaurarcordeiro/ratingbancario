@@ -292,6 +292,11 @@ async function init() {
     else window.location.href = 'aluno.html';
     return;
   }
+  if (profile.ativo === false) {
+    await sb.auth.signOut();
+    window.location.href = 'login.html?erro=acesso_bloqueado';
+    return;
+  }
 
   afiliadoId = profile.id;
   afiliadoSlug = profile.slug || '';

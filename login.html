@@ -132,6 +132,16 @@ var _supa = window.supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdW5ia3VwaHdodGRzbWdiamNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODAxMDUsImV4cCI6MjA5MTU1NjEwNX0.6sMy0aRklRNYIBh2ewpwVN8m_cBu564jWbKjnXeuMRQ'
 );
 
+// Mostrar erro de acesso bloqueado
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('erro') === 'acesso_bloqueado') {
+    var el = document.getElementById('error-msg');
+    el.textContent = '🚫 Seu acesso foi desativado pelo administrador. Entre em contato para reativação.';
+    el.style.display = 'block';
+  }
+})();
+
 // Verificar sessão ativa
 (async function() {
   try {

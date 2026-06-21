@@ -411,6 +411,7 @@ tbody td{padding:14px 20px;font-size:13px;}
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Status</th>
               <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Afiliado</th>
               <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Slug</th>
               <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Alunos (período)</th>
@@ -1097,7 +1098,15 @@ function renderAfiliadosComFim(inicio, fim) {
     totalPeriodo += periodo.length;
     fatPeriodo += fatP;
     fatTotal += fatT;
+    const ativo = aff.ativo !== false;
+    const btnToggle = ativo
+      ? `<button onclick="toggleAfiliado('${aff.id}', false)" style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">🚫 Desativar</button>`
+      : `<button onclick="toggleAfiliado('${aff.id}', true)" style="background:rgba(0,200,83,0.1);color:var(--green-soft);border:1px solid rgba(0,200,83,0.3);padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">✅ Ativar</button>`;
+    const statusBadge = ativo
+      ? `<span style="background:rgba(0,200,83,0.12);color:var(--green-soft);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">Ativo</span>`
+      : `<span style="background:rgba(248,113,113,0.12);color:#f87171;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;">Inativo</span>`;
     return `<tr>
+      <td>${statusBadge}<br><div style="margin-top:6px;">${btnToggle}</div></td>
       <td><strong>${aff.nome||'—'}</strong><br><small style="color:var(--muted)">${aff.email||''}</small></td>
       <td><span style="color:#4ea8ff;font-family:monospace;font-size:12px;">${aff.slug||'—'}</span></td>
       <td><strong>${periodo.length}</strong></td>
@@ -1111,7 +1120,15 @@ function renderAfiliadosComFim(inicio, fim) {
   document.getElementById('aff-fat-periodo').textContent = `R$ ${fatPeriodo.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   document.getElementById('aff-fat-total').textContent = `R$ ${fatTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   document.getElementById('tabela-afiliados').innerHTML = rows.length ? rows.join('') :
-    '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Nenhum afiliado cadastrado</td></tr>';
+    '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">Nenhum afiliado cadastrado</td></tr>';
+}
+
+async function toggleAfiliado(id, ativar) {
+  const msg = ativar ? 'Ativar acesso deste afiliado?' : 'Desativar acesso deste afiliado? Ele não conseguirá mais fazer login.';
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('profiles').update({ ativo: ativar }).eq('id', id);
+  if (error) { alert('Erro ao atualizar: ' + error.message); return; }
+  await carregarAfiliados();
 }
 
 document.getElementById('naff-slug')?.addEventListener('input', function() {

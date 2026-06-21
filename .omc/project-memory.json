@@ -44,20 +44,20 @@
   "hotPaths": [
     {
       "path": "admin.html",
-      "accessCount": 23,
-      "lastAccessed": 1782057839227,
+      "accessCount": 26,
+      "lastAccessed": 1782059176000,
       "type": "file"
     },
     {
       "path": "afiliado.html",
-      "accessCount": 6,
-      "lastAccessed": 1782057656703,
+      "accessCount": 7,
+      "lastAccessed": 1782059190989,
       "type": "file"
     },
     {
       "path": "login.html",
-      "accessCount": 5,
-      "lastAccessed": 1782057518051,
+      "accessCount": 6,
+      "lastAccessed": 1782059202108,
       "type": "file"
     },
     {
