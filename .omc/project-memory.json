@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1777386649392,
+  "lastScanned": 1778093407673,
   "projectRoot": "C:\\Users\\Junio\\OneDrive\\Desktop\\ARQUITETO\\RatingBancario",
   "techStack": {
     "languages": [],
@@ -32,19 +32,56 @@
     "api": {
       "path": "api",
       "purpose": "API routes",
-      "fileCount": 2,
-      "lastAccessed": 1777386649374,
+      "fileCount": 3,
+      "lastAccessed": 1778093407648,
       "keyFiles": [
         "chat.js",
-        "delete-aluno.js"
+        "delete-aluno.js",
+        "trocar-senha.js"
       ]
     }
   },
   "hotPaths": [
     {
       "path": "admin.html",
-      "accessCount": 4,
-      "lastAccessed": 1778002664758,
+      "accessCount": 13,
+      "lastAccessed": 1782055851161,
+      "type": "file"
+    },
+    {
+      "path": "login.html",
+      "accessCount": 3,
+      "lastAccessed": 1782055724309,
+      "type": "file"
+    },
+    {
+      "path": "migrate-afiliados.sql",
+      "accessCount": 1,
+      "lastAccessed": 1782055556853,
+      "type": "file"
+    },
+    {
+      "path": "afiliado.html",
+      "accessCount": 1,
+      "lastAccessed": 1782055653403,
+      "type": "file"
+    },
+    {
+      "path": "api\\trocar-senha.js",
+      "accessCount": 1,
+      "lastAccessed": 1782055671895,
+      "type": "file"
+    },
+    {
+      "path": "api\\delete-aluno.js",
+      "accessCount": 1,
+      "lastAccessed": 1782055672221,
+      "type": "file"
+    },
+    {
+      "path": "api\\criar-usuario.js",
+      "accessCount": 1,
+      "lastAccessed": 1782055688674,
       "type": "file"
     }
   ],

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Afiliado — Rating Bancário Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080f08;--surface:#0f1a0f;--surface2:#162016;--surface3:#1c2a1c;
+  --border:rgba(0,200,83,0.12);--border-hover:rgba(0,200,83,0.3);
+  --green:#00c853;--green-dark:#00a846;--green-soft:#4ade80;
+  --gold:#ffd600;--red:#f87171;--amber:#fbbf24;
+  --text:#ffffff;--muted:#6b9b7b;--dim:#3a5a3a;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.nav{background:rgba(8,15,8,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#00c853,#00a846);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#000;}
+.logo-title{font-size:14px;font-weight:800;}
+.logo-sub{font-size:10px;color:var(--muted);}
+.afiliado-badge{background:rgba(0,200,83,0.15);border:1px solid rgba(0,200,83,0.3);color:var(--green-soft);font-size:11px;font-weight:800;padding:4px 10px;border-radius:100px;letter-spacing:0.05em;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-nome{font-size:13px;font-weight:600;color:var(--muted);}
+.btn-sair{background:none;border:1px solid rgba(248,113,113,0.3);color:#f87171;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 64px);}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 16px;}
+.sidebar-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin-bottom:12px;padding:0 8px;}
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;border:none;background:none;width:100%;text-align:left;margin-bottom:2px;}
+.sidebar-link:hover{background:var(--surface2);color:var(--text);}
+.sidebar-link.active{background:rgba(0,200,83,0.12);color:var(--green-soft);}
+.sidebar-link .icon{font-size:16px;width:20px;text-align:center;}
+.main{padding:32px;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:22px;font-weight:900;margin-bottom:6px;}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:28px;}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+@media(max-width:900px){.metrics-grid{grid-template-columns:1fr 1fr;}}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;}
+.metric-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;}
+.metric-value{font-size:28px;font-weight:900;margin-bottom:4px;}
+.metric-delta{font-size:12px;color:var(--muted);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+.card-title{font-size:15px;font-weight:800;margin-bottom:16px;}
+.link-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.link-text{font-size:13px;color:var(--green-soft);font-family:monospace;word-break:break-all;}
+.btn-copiar{background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.3);color:var(--green-soft);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.btn-copiar:hover{background:rgba(0,200,83,0.2);}
+.copiado{font-size:11px;color:var(--green-soft);display:none;margin-left:8px;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(0,200,83,0.05);}
+tr:hover td{background:var(--surface2);}
+.badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+.badge-ativo{background:rgba(0,200,83,0.12);color:var(--green-soft);}
+.badge-inativo{background:rgba(248,113,113,0.12);color:#f87171;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.field input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;}
+.field input:focus{border-color:var(--green);}
+.btn-primary{background:linear-gradient(135deg,#00c853,#00a846);color:#000;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.2s;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,200,83,0.3);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-sm{padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;border:none;}
+.btn-edit{background:rgba(0,200,83,0.1);color:var(--green-soft);border:1px solid rgba(0,200,83,0.2);}
+.btn-edit:hover{background:rgba(0,200,83,0.2);}
+.msg-ok{background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#4ade80;font-weight:600;display:none;margin-top:12px;}
+.msg-err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#f87171;font-weight:600;display:none;margin-top:12px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:420px;}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:20px;}
+.modal-footer{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="logo-icon">RB</div>
+    <div>
+      <div class="logo-title">Rating Bancário Pro</div>
+      <div class="logo-sub">Painel do Afiliado</div>
+    </div>
+    <span class="afiliado-badge" style="margin-left:12px;">AFILIADO</span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-nome" id="nav-nome"></span>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">Menu</div>
+    <button class="sidebar-link active" onclick="showPage('dashboard',this)"><span class="icon">📊</span> Dashboard</button>
+    <button class="sidebar-link" onclick="showPage('alunos',this)"><span class="icon">👥</span> Meus Alunos</button>
+    <button class="sidebar-link" onclick="showPage('novo-aluno',this)"><span class="icon">➕</span> Novo Aluno</button>
+    <button class="sidebar-link" onclick="showPage('meu-link',this)"><span class="icon">🔗</span> Meu Link</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Acompanhe sua performance como afiliado</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Total de Alunos</div>
+          <div class="metric-value" id="m-total">0</div>
+          <div class="metric-delta">alunos cadastrados</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Alunos este mês</div>
+          <div class="metric-value" id="m-mes">0</div>
+          <div class="metric-delta" id="m-mes-label">em <span id="m-mes-nome"></span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Receita estimada</div>
+          <div class="metric-value" id="m-receita">R$ 0</div>
+          <div class="metric-delta">R$ 500 por aluno</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Últimos alunos cadastrados</div>
+        <table>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastrado em</th><th>Status</th></tr></thead>
+          <tbody id="tabela-recentes"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEUS ALUNOS -->
+    <div class="page" id="page-alunos">
+      <div class="page-title">Meus Alunos</div>
+      <div class="page-sub">Gerencie todos os alunos da sua base</div>
+      <div class="card">
+        <input type="text" id="search-alunos" placeholder="🔍 Buscar por nome ou e-mail..." oninput="filtrarAlunos()"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);width:100%;margin-bottom:16px;outline:none;font-family:'Inter',sans-serif;">
+        <table>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastrado em</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-alunos"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NOVO ALUNO -->
+    <div class="page" id="page-novo-aluno">
+      <div class="page-title">Novo Aluno</div>
+      <div class="page-sub">Cadastre um novo aluno na sua base</div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label">Nome completo *</label>
+            <input type="text" id="n-nome" placeholder="Nome do aluno">
+          </div>
+          <div class="field">
+            <label class="field-label">E-mail *</label>
+            <input type="email" id="n-email" placeholder="email@exemplo.com">
+          </div>
+          <div class="field">
+            <label class="field-label">Senha de acesso *</label>
+            <input type="text" id="n-senha" placeholder="Mínimo 6 caracteres">
+          </div>
+          <div class="field">
+            <label class="field-label">Telefone</label>
+            <input type="tel" id="n-telefone" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="cadastrarAluno()" id="btn-cadastrar">Cadastrar Aluno</button>
+        <div class="msg-ok" id="n-ok"></div>
+        <div class="msg-err" id="n-err"></div>
+      </div>
+
+      <div class="card" style="border-color:rgba(255,214,0,0.2);">
+        <div class="card-title" style="color:var(--gold);">📋 Como enviar o acesso ao aluno</div>
+        <p style="font-size:14px;color:var(--muted);line-height:1.8;">
+          1. Cadastre o aluno acima com o e-mail e senha desejados<br>
+          2. Envie para o aluno via WhatsApp ou e-mail:<br><br>
+          <span style="background:var(--surface2);border-radius:8px;padding:12px 16px;display:block;font-size:13px;color:#ccc;font-family:monospace;">
+            🎓 Seu acesso ao Rating Bancário Pro está liberado!<br>
+            🔗 Link: <span id="link-envio" style="color:#4ea8ff;">https://ratingbancario.vercel.app/login.html</span>
+            <button onclick="copiarLinkEnvio()" title="Copiar link" style="background:none;border:none;cursor:pointer;padding:2px 6px;margin-left:4px;color:#4ea8ff;font-size:15px;vertical-align:middle;">📋</button>
+            <span id="copiado-envio" style="color:#4caf50;font-size:11px;display:none;margin-left:4px;">Copiado!</span><br>
+            📧 E-mail: (o e-mail que você cadastrou)<br>
+            🔑 Senha: (a senha que você definiu)
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- MEU LINK -->
+    <div class="page" id="page-meu-link">
+      <div class="page-title">Meu Link de Indicação</div>
+      <div class="page-sub">Compartilhe este link personalizado com seus clientes</div>
+
+      <div class="card">
+        <div class="card-title">🔗 Seu link exclusivo</div>
+        <div class="link-box">
+          <span class="link-text" id="meu-link-url">Carregando...</span>
+          <button class="btn-copiar" onclick="copiarMeuLink()">📋 Copiar</button>
+        </div>
+        <span class="copiado" id="copiado-link">✅ Link copiado!</span>
+        <p style="font-size:13px;color:var(--muted);margin-top:16px;line-height:1.7;">
+          Quando um cliente acessar a plataforma pelo seu link, ele será automaticamente associado à sua base de alunos.<br>
+          <strong style="color:var(--text);">Compartilhe no WhatsApp, Instagram, ou qualquer canal que preferir.</strong>
+        </p>
+      </div>
+
+      <div class="card" style="border-color:rgba(255,214,0,0.2);">
+        <div class="card-title" style="color:var(--gold);">💰 Como funciona sua comissão</div>
+        <p style="font-size:14px;color:var(--muted);line-height:1.9;">
+          • Cada aluno que você indicar vale <strong style="color:var(--text);">R$ 500</strong> para você<br>
+          • O cliente paga <strong style="color:var(--text);">R$ 700</strong> pelo acesso à plataforma<br>
+          • Você repassa <strong style="color:var(--text);">R$ 200</strong> para a Rating Bancário Pro<br>
+          • Quanto mais alunos, maior sua receita mensal
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL TROCAR SENHA -->
+<div class="modal-overlay" id="modal-senha">
+  <div class="modal">
+    <div class="modal-title">🔑 Trocar senha do aluno</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="modal-aluno-nome"></p>
+    <div class="field">
+      <label class="field-label">Nova senha *</label>
+      <input type="text" id="modal-nova-senha" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="msg-ok" id="modal-ok"></div>
+    <div class="msg-err" id="modal-err"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-primary" onclick="trocarSenha()" id="btn-trocar">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sb = window.supabase.createClient(
+  'https://spunbkuphwhtdsmgbjce.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdW5ia3VwaHdodGRzbWdiamNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODAxMDUsImV4cCI6MjA5MTU1NjEwNX0.6sMy0aRklRNYIBh2ewpwVN8m_cBu564jWbKjnXeuMRQ'
+);
+
+let afiliadoId = null;
+let afiliadoSlug = null;
+let todosAlunos = [];
+let alunoSelecionadoId = null;
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+  if (!profile || profile.role !== 'afiliado') {
+    if (profile?.role === 'admin' || profile?.role === 'administrador') window.location.href = 'admin.html';
+    else window.location.href = 'aluno.html';
+    return;
+  }
+
+  afiliadoId = profile.id;
+  afiliadoSlug = profile.slug || '';
+  document.getElementById('nav-nome').textContent = profile.nome || profile.email;
+
+  const linkUrl = `https://ratingbancario.vercel.app/login.html?ref=${afiliadoSlug}`;
+  document.getElementById('meu-link-url').textContent = linkUrl;
+
+  await carregarDados();
+}
+
+async function carregarDados() {
+  const { data: alunos } = await sb.from('profiles')
+    .select('*')
+    .eq('afiliado_id', afiliadoId)
+    .eq('role', 'aluno')
+    .order('created_at', { ascending: false });
+
+  todosAlunos = alunos || [];
+
+  // Métricas
+  const total = todosAlunos.length;
+  const agora = new Date();
+  const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+  const doMes = todosAlunos.filter(a => a.created_at?.startsWith(mesAtual)).length;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-mes').textContent = doMes;
+  document.getElementById('m-mes-nome').textContent = meses[agora.getMonth()];
+  document.getElementById('m-receita').textContent = `R$ ${(total * 500).toLocaleString('pt-BR')}`;
+
+  // Tabela recentes (últimos 5)
+  const recentes = todosAlunos.slice(0, 5);
+  const tbRecentes = document.getElementById('tabela-recentes');
+  if (recentes.length === 0) {
+    tbRecentes.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Nenhum aluno cadastrado ainda</td></tr>';
+  } else {
+    tbRecentes.innerHTML = recentes.map(a => `
+      <tr>
+        <td><strong>${a.nome || '—'}</strong></td>
+        <td style="color:var(--muted)">${a.email || '—'}</td>
+        <td style="color:var(--muted)">${formatarData(a.created_at)}</td>
+        <td><span class="badge badge-ativo">Ativo</span></td>
+      </tr>`).join('');
+  }
+
+  renderizarAlunos();
+}
+
+function renderizarAlunos() {
+  const busca = document.getElementById('search-alunos')?.value?.toLowerCase() || '';
+  const filtrados = todosAlunos.filter(a =>
+    (a.nome || '').toLowerCase().includes(busca) ||
+    (a.email || '').toLowerCase().includes(busca)
+  );
+  const tb = document.getElementById('tabela-alunos');
+  if (filtrados.length === 0) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Nenhum aluno encontrado</td></tr>';
+    return;
+  }
+  tb.innerHTML = filtrados.map(a => `
+    <tr>
+      <td><strong>${a.nome || '—'}</strong></td>
+      <td style="color:var(--muted)">${a.email || '—'}</td>
+      <td style="color:var(--muted)">${a.telefone || '—'}</td>
+      <td style="color:var(--muted)">${formatarData(a.created_at)}</td>
+      <td><span class="badge badge-ativo">Ativo</span></td>
+      <td><button class="btn-sm btn-edit" onclick="abrirModalSenha('${a.id}','${(a.nome||'').replace(/'/g,"\\'")}')">🔑 Trocar senha</button></td>
+    </tr>`).join('');
+}
+
+function filtrarAlunos() { renderizarAlunos(); }
+
+async function cadastrarAluno() {
+  const nome = document.getElementById('n-nome').value.trim();
+  const email = document.getElementById('n-email').value.trim();
+  const senha = document.getElementById('n-senha').value;
+  const telefone = document.getElementById('n-telefone').value.trim();
+  const ok = document.getElementById('n-ok');
+  const err = document.getElementById('n-err');
+  const btn = document.getElementById('btn-cadastrar');
+  ok.style.display = 'none'; err.style.display = 'none';
+
+  if (!nome || !email || !senha) { err.textContent = 'Preencha nome, e-mail e senha.'; err.style.display = 'block'; return; }
+  if (senha.length < 6) { err.textContent = 'A senha deve ter no mínimo 6 caracteres.'; err.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Cadastrando...';
+
+  try {
+    const res = await fetch('/api/criar-usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, email, senha, telefone, afiliado_id: afiliadoId })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Erro ao cadastrar');
+
+    ok.textContent = `✅ Aluno "${nome}" cadastrado com sucesso!`;
+    ok.style.display = 'block';
+    document.getElementById('n-nome').value = '';
+    document.getElementById('n-email').value = '';
+    document.getElementById('n-senha').value = '';
+    document.getElementById('n-telefone').value = '';
+    await carregarDados();
+  } catch(e) {
+    err.textContent = e.message || 'Erro ao cadastrar aluno.';
+    err.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Cadastrar Aluno';
+}
+
+function abrirModalSenha(id, nome) {
+  alunoSelecionadoId = id;
+  document.getElementById('modal-aluno-nome').textContent = `Aluno: ${nome}`;
+  document.getElementById('modal-nova-senha').value = '';
+  document.getElementById('modal-ok').style.display = 'none';
+  document.getElementById('modal-err').style.display = 'none';
+  document.getElementById('modal-senha').classList.add('open');
+}
+
+function fecharModal() {
+  document.getElementById('modal-senha').classList.remove('open');
+  alunoSelecionadoId = null;
+}
+
+async function trocarSenha() {
+  const novaSenha = document.getElementById('modal-nova-senha').value;
+  const ok = document.getElementById('modal-ok');
+  const err = document.getElementById('modal-err');
+  const btn = document.getElementById('btn-trocar');
+  ok.style.display = 'none'; err.style.display = 'none';
+
+  if (!novaSenha || novaSenha.length < 6) { err.textContent = 'A senha deve ter no mínimo 6 caracteres.'; err.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const res = await fetch('/api/criar-usuario', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: alunoSelecionadoId, nova_senha: novaSenha })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Erro ao trocar senha');
+    ok.textContent = '✅ Senha alterada com sucesso!';
+    ok.style.display = 'block';
+    setTimeout(() => fecharModal(), 1500);
+  } catch(e) {
+    err.textContent = e.message || 'Erro ao trocar senha.';
+    err.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Salvar nova senha';
+}
+
+function copiarMeuLink() {
+  const link = document.getElementById('meu-link-url').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    const msg = document.getElementById('copiado-link');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  });
+}
+
+function copiarLinkEnvio() {
+  const link = document.getElementById('link-envio').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    const msg = document.getElementById('copiado-envio');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  });
+}
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+function formatarData(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+async function sair() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>

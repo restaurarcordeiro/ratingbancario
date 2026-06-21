@@ -137,6 +137,8 @@ var _supa = window.supabase.createClient(
       var p = await _supa.from('profiles').select('role').eq('id', uid).single();
       if (p.data && (p.data.role === 'admin' || p.data.role === 'administrador')) {
         window.location.href = 'admin.html';
+      } else if (p.data && p.data.role === 'afiliado') {
+        window.location.href = 'afiliado.html';
       } else {
         window.location.href = 'aluno.html';
       }
@@ -176,6 +178,8 @@ async function fazerLogin() {
     var prof = await _supa.from('profiles').select('role').eq('id', uid).single();
     if (prof.data && (prof.data.role === 'admin' || prof.data.role === 'administrador')) {
       window.location.href = 'admin.html';
+    } else if (prof.data && prof.data.role === 'afiliado') {
+      window.location.href = 'afiliado.html';
     } else {
       window.location.href = 'aluno.html';
     }
