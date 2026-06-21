@@ -206,29 +206,42 @@ tbody td{padding:14px 20px;font-size:13px;}
       <div class="page-sub">Visão geral da plataforma em tempo real</div>
 
       <div class="metrics-grid">
-        <div class="metric-card">
+        <div class="metric-card" onclick="abrirModalKPI('total')" style="cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(0,200,83,0.4)'" onmouseout="this.style.borderColor=''">
           <div class="metric-icon">👥</div>
           <div class="metric-num" id="met-total">0</div>
           <div class="metric-label">Total de alunos</div>
           <div class="metric-delta delta-up" id="met-delta-total">carregando...</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px;">clique para detalhes →</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" onclick="abrirModalKPI('ativos')" style="cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(0,200,83,0.4)'" onmouseout="this.style.borderColor=''">
           <div class="metric-icon">✅</div>
           <div class="metric-num" id="met-ativos">0</div>
           <div class="metric-label">Alunos ativos (7 dias)</div>
           <div class="metric-delta delta-up" id="met-delta-ativos">com progresso recente</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px;">clique para detalhes →</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" onclick="abrirModalKPI('receita')" style="cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(0,200,83,0.4)'" onmouseout="this.style.borderColor=''">
           <div class="metric-icon">💰</div>
           <div class="metric-num" id="met-receita">R$ 0</div>
           <div class="metric-label">Receita própria (sem afiliados)</div>
-          <div class="metric-delta" style="color:var(--muted)">clientes diretos do admin</div>
+          <div class="metric-delta" style="color:var(--muted)">Mensal: <span id="met-receita-mensal">R$ 0</span></div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px;">clique para detalhes →</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" onclick="abrirModalKPI('afiliados')" style="cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(0,200,83,0.4)'" onmouseout="this.style.borderColor=''">
           <div class="metric-icon">🤝</div>
           <div class="metric-num" id="met-fat-afiliados">R$ 0</div>
           <div class="metric-label">Faturamento total afiliados</div>
-          <div class="metric-delta" id="met-delta-afiliados" style="color:var(--muted)">todos os afiliados</div>
+          <div class="metric-delta" id="met-delta-afiliados" style="color:var(--muted)">Mensal: <span id="met-fat-afiliados-mensal">R$ 0</span></div>
+          <div style="font-size:10px;color:var(--dim);margin-top:8px;">clique para detalhes →</div>
+        </div>
+      </div>
+
+      <!-- MODAL KPI -->
+      <div id="modal-kpi" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)fecharModalKPI()">
+        <div style="background:#0f1a0f;border:1px solid rgba(0,200,83,0.2);border-radius:20px;padding:32px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto;position:relative;">
+          <button onclick="fecharModalKPI()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+          <div id="modal-kpi-titulo" style="font-size:18px;font-weight:900;margin-bottom:20px;"></div>
+          <div id="modal-kpi-conteudo"></div>
         </div>
       </div>
 
@@ -613,12 +626,25 @@ async function renderMetrics() {
   const { data: alunosAfil } = await sb.from('profiles').select('valor_servico').eq('role','aluno').not('afiliado_id','is',null);
   const fatAfiliados = (alunosAfil || []).reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
 
+  // Faturamento mensal (mês atual)
+  const agora = new Date();
+  const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+  const receitaMensal = alunosProprios.filter(a => a.created_at?.startsWith(mesAtual))
+    .reduce((s,a) => s + (parseFloat(a.valor_servico)||697), 0);
+  const fatAfiliadosMensal = (alunosAfil||[]).filter(a => a.created_at?.startsWith(mesAtual))
+    .reduce((s,a) => s + (parseFloat(a.valor_servico)||0), 0);
+
   document.getElementById('met-total').textContent = total;
   document.getElementById('met-ativos').textContent = ativos;
   document.getElementById('met-receita').textContent = 'R$ ' + receitaPropria.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('met-receita-mensal').textContent = 'R$ ' + receitaMensal.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('met-fat-afiliados').textContent = 'R$ ' + fatAfiliados.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('met-fat-afiliados-mensal').textContent = 'R$ ' + fatAfiliadosMensal.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('met-delta-total').textContent = ativos + ' ativos nos últimos 7 dias';
   document.getElementById('met-delta-afiliados').textContent = (alunosAfil||[]).length + ' alunos via afiliados';
+
+  // Guarda dados para modal
+  window._kpiData = { total, ativos, alunosProprios, alunosAfil: alunosAfil||[], receitaPropria, receitaMensal, fatAfiliados, fatAfiliadosMensal };
 }
 
 // ===================== CHARTS =====================
@@ -1264,6 +1290,96 @@ async function cadastrarAfiliado() {
     err.style.display='block';
   }
   btn.disabled=false; btn.textContent='Cadastrar Afiliado';
+}
+
+// ===================== MODAL KPI =====================
+function abrirModalKPI(tipo) {
+  const d = window._kpiData || {};
+  const modal = document.getElementById('modal-kpi');
+  const titulo = document.getElementById('modal-kpi-titulo');
+  const conteudo = document.getElementById('modal-kpi-conteudo');
+  const agora = new Date();
+  const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  let html = '';
+
+  if (tipo === 'total') {
+    titulo.textContent = '👥 Total de Alunos';
+    const porMes = {};
+    todosAlunos.forEach(a => {
+      const m = new Date(a.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      porMes[m] = (porMes[m] || 0) + 1;
+    });
+    html = `<div style="margin-bottom:16px;font-size:13px;color:var(--muted);">Total geral: <strong style="color:var(--text)">${d.total}</strong> alunos</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Mês</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Novos alunos</th></tr></thead>
+      <tbody>${Object.entries(porMes).map(([m,q]) => `<tr><td style="padding:8px;border-bottom:1px solid rgba(0,200,83,0.05)">${m}</td><td style="padding:8px;text-align:right;font-weight:700;color:var(--green-soft);border-bottom:1px solid rgba(0,200,83,0.05)">${q}</td></tr>`).join('')}</tbody>
+    </table>`;
+
+  } else if (tipo === 'ativos') {
+    titulo.textContent = '✅ Alunos Ativos (7 dias)';
+    const ativos = todosAlunos.filter(a => a.ativo);
+    html = `<div style="margin-bottom:16px;font-size:13px;color:var(--muted);">${ativos.length} alunos com progresso nos últimos 7 dias</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Nome</th><th style="text-align:left;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">E-mail</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Tarefas</th></tr></thead>
+      <tbody>${ativos.map(a => `<tr><td style="padding:8px;border-bottom:1px solid rgba(0,200,83,0.05)"><strong>${a.nome||'—'}</strong></td><td style="padding:8px;color:var(--muted);border-bottom:1px solid rgba(0,200,83,0.05)">${a.email||'—'}</td><td style="padding:8px;text-align:right;border-bottom:1px solid rgba(0,200,83,0.05)">${a.feitas}/${TAREFAS_TOTAL}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">Nenhum aluno ativo</td></tr>'}</tbody>
+    </table>`;
+
+  } else if (tipo === 'receita') {
+    titulo.textContent = '💰 Receita Própria (sem afiliados)';
+    const porMes = {};
+    (d.alunosProprios||[]).forEach(a => {
+      const m = new Date(a.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      if (!porMes[m]) porMes[m] = { qtd: 0, fat: 0 };
+      porMes[m].qtd++;
+      porMes[m].fat += parseFloat(a.valor_servico)||697;
+    });
+    html = `<div style="display:flex;gap:16px;margin-bottom:20px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;flex:1;text-align:center;">
+        <div style="font-size:20px;font-weight:900;color:var(--green-soft)">R$ ${(d.receitaPropria||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Acumulado total</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;flex:1;text-align:center;">
+        <div style="font-size:20px;font-weight:900;color:var(--green-soft)">R$ ${(d.receitaMensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">${mesNome}</div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Mês</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Alunos</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Faturamento</th></tr></thead>
+      <tbody>${Object.entries(porMes).map(([m,v]) => `<tr><td style="padding:8px;border-bottom:1px solid rgba(0,200,83,0.05)">${m}</td><td style="padding:8px;text-align:right;border-bottom:1px solid rgba(0,200,83,0.05)">${v.qtd}</td><td style="padding:8px;text-align:right;font-weight:700;color:var(--green-soft);border-bottom:1px solid rgba(0,200,83,0.05)">R$ ${v.fat.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">Nenhum dado</td></tr>'}</tbody>
+    </table>`;
+
+  } else if (tipo === 'afiliados') {
+    titulo.textContent = '🤝 Faturamento Total Afiliados';
+    const porMes = {};
+    (d.alunosAfil||[]).forEach(a => {
+      const m = new Date(a.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      if (!porMes[m]) porMes[m] = { qtd: 0, fat: 0 };
+      porMes[m].qtd++;
+      porMes[m].fat += parseFloat(a.valor_servico)||0;
+    });
+    html = `<div style="display:flex;gap:16px;margin-bottom:20px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;flex:1;text-align:center;">
+        <div style="font-size:20px;font-weight:900;color:var(--green-soft)">R$ ${(d.fatAfiliados||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Acumulado total</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px 20px;flex:1;text-align:center;">
+        <div style="font-size:20px;font-weight:900;color:var(--green-soft)">R$ ${(d.fatAfiliadosMensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">${mesNome}</div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Mês</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Alunos</th><th style="text-align:right;padding:8px;color:var(--muted);border-bottom:1px solid var(--border);">Faturamento</th></tr></thead>
+      <tbody>${Object.entries(porMes).map(([m,v]) => `<tr><td style="padding:8px;border-bottom:1px solid rgba(0,200,83,0.05)">${m}</td><td style="padding:8px;text-align:right;border-bottom:1px solid rgba(0,200,83,0.05)">${v.qtd}</td><td style="padding:8px;text-align:right;font-weight:700;color:var(--green-soft);border-bottom:1px solid rgba(0,200,83,0.05)">R$ ${v.fat.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:16px;text-align:center;color:var(--muted)">Nenhum dado</td></tr>'}</tbody>
+    </table>`;
+  }
+
+  conteudo.innerHTML = html;
+  modal.style.display = 'flex';
+}
+
+function fecharModalKPI() {
+  document.getElementById('modal-kpi').style.display = 'none';
 }
 
 async function sair() {
