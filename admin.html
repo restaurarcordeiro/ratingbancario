@@ -189,7 +189,8 @@ tbody td{padding:14px 20px;font-size:13px;}
     <div class="sidebar-title">Menu</div>
     <button class="sidebar-link active" onclick="showPage('dashboard',this)"><span class="icon">📊</span> Dashboard</button>
     <button class="sidebar-link" onclick="showPage('alunos',this)"><span class="icon">👥</span> Alunos</button>
-    <button class="sidebar-link" onclick="showPage('solicitacoes',this)" id="link-solicitacoes"><span class="icon">📋</span> Solicitações <span id="badge-solic" style="background:#f87171;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:100px;margin-left:4px;display:none;">0</span></button>
+    <button class="sidebar-link" onclick="showPage('solicitacoes',this)" id="link-solicitacoes"><span class="icon">📋</span> Minhas Solic. <span id="badge-solic" style="background:#f87171;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:100px;margin-left:4px;display:none;">0</span></button>
+    <button class="sidebar-link" onclick="showPage('solic-afiliados',this)" id="link-solic-aff"><span class="icon">📋</span> Solic. Afiliados <span id="badge-solic-aff" style="background:#f87171;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:100px;margin-left:4px;display:none;">0</span></button>
     <button class="sidebar-link" onclick="showPage('novo-aluno',this)"><span class="icon">➕</span> Novo Aluno</button>
     <button class="sidebar-link" onclick="showPage('afiliados',this)"><span class="icon">🤝</span> Afiliados</button>
     <button class="sidebar-link" onclick="showPage('novo-afiliado',this)"><span class="icon">➕</span> Novo Afiliado</button>
@@ -353,12 +354,37 @@ tbody td{padding:14px 20px;font-size:13px;}
       </div>
     </div>
 
+    <!-- SOLICITAÇÕES DOS AFILIADOS -->
+    <div class="page" id="page-solic-afiliados">
+      <div class="page-title">Solicitações dos Afiliados</div>
+      <div class="page-sub">Todas as solicitações vindas pelos links dos afiliados</div>
+      <div class="solic-filters">
+        <button class="filter-btn active" onclick="filtrarSolicAff('pendente',this)">Pendentes</button>
+        <button class="filter-btn" onclick="filtrarSolicAff('aprovado',this)">Aprovados</button>
+        <button class="filter-btn" onclick="filtrarSolicAff('rejeitado',this)">Rejeitados</button>
+        <button class="filter-btn" onclick="filtrarSolicAff('todos',this)">Todos</button>
+      </div>
+      <div class="solic-card">
+        <div id="solic-aff-lista"><div class="solic-empty">Carregando...</div></div>
+      </div>
+    </div>
+
     <!-- AFILIADOS -->
     <div class="page" id="page-afiliados">
       <div class="page-title">Afiliados</div>
-      <div class="page-sub">Acompanhe as métricas de todos os afiliados</div>
+      <div class="page-sub">Acompanhe as métricas e faturamento de todos os afiliados</div>
 
-      <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+        <button class="filter-btn active" onclick="filtrarAfiliados('hoje',this)">Hoje</button>
+        <button class="filter-btn" onclick="filtrarAfiliados('semana',this)">Esta semana</button>
+        <button class="filter-btn" onclick="filtrarAfiliados('mes',this)">Este mês</button>
+        <button class="filter-btn" onclick="filtrarAfiliados('total',this)">Total</button>
+        <input type="date" id="aff-data-inicio" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;">
+        <input type="date" id="aff-data-fim" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;">
+        <button class="filter-btn" onclick="filtrarAfiliados('custom',null)">Filtrar período</button>
+      </div>
+
+      <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr);">
         <div class="metric-card">
           <div class="metric-icon">🤝</div>
           <div class="metric-num" id="aff-total">0</div>
@@ -366,13 +392,18 @@ tbody td{padding:14px 20px;font-size:13px;}
         </div>
         <div class="metric-card">
           <div class="metric-icon">👥</div>
-          <div class="metric-num" id="aff-alunos">0</div>
-          <div class="metric-label">Total de alunos por afiliados</div>
+          <div class="metric-num" id="aff-alunos-periodo">0</div>
+          <div class="metric-label">Alunos no período</div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon">📅</div>
-          <div class="metric-num" id="aff-mes">0</div>
-          <div class="metric-label">Alunos este mês (afiliados)</div>
+          <div class="metric-icon">💰</div>
+          <div class="metric-num" id="aff-fat-periodo">R$ 0</div>
+          <div class="metric-label">Faturamento no período</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">💎</div>
+          <div class="metric-num" id="aff-fat-total">R$ 0</div>
+          <div class="metric-label">Faturamento total</div>
         </div>
       </div>
 
@@ -381,11 +412,11 @@ tbody td{padding:14px 20px;font-size:13px;}
           <thead>
             <tr>
               <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Afiliado</th>
-              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">E-mail</th>
-              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Slug / Link</th>
-              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Total Alunos</th>
-              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Este mês</th>
-              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Receita est.</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Slug</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Alunos (período)</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Total alunos</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Fat. período</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);">Fat. total</th>
             </tr>
           </thead>
           <tbody id="tabela-afiliados">
@@ -822,15 +853,89 @@ let filtroSolic = 'pendente';
 
 async function carregarSolicitacoes() {
   const { data } = await sb.from('solicitacoes').select('*').order('created_at', { ascending: false });
-  todasSolic = data || [];
+  const todas = data || [];
 
-  // Badge de pendentes
+  // Minhas = sem afiliado_id
+  todasSolic = todas.filter(s => !s.afiliado_id);
+  // Afiliados = com afiliado_id
+  todasSolicAff = todas.filter(s => !!s.afiliado_id);
+
+  // Badge minhas
   const pendentes = todasSolic.filter(s => s.status === 'pendente').length;
   const badge = document.getElementById('badge-solic');
   if (pendentes > 0) { badge.textContent = pendentes; badge.style.display = 'inline'; }
   else { badge.style.display = 'none'; }
 
+  // Badge afiliados
+  const pendentesAff = todasSolicAff.filter(s => s.status === 'pendente').length;
+  const badgeAff = document.getElementById('badge-solic-aff');
+  if (pendentesAff > 0) { badgeAff.textContent = pendentesAff; badgeAff.style.display = 'inline'; }
+  else { badgeAff.style.display = 'none'; }
+
   renderSolic();
+  renderSolicAff();
+}
+
+// Solicitações dos afiliados
+let todasSolicAff = [];
+let filtroSolicAff = 'pendente';
+
+function filtrarSolicAff(status, btn) {
+  filtroSolicAff = status;
+  document.querySelectorAll('#page-solic-afiliados .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSolicAff();
+}
+
+function renderSolicAff() {
+  const lista = filtroSolicAff === 'todos' ? todasSolicAff : todasSolicAff.filter(s => s.status === filtroSolicAff);
+  const el = document.getElementById('solic-aff-lista');
+  if (!lista.length) {
+    el.innerHTML = `<div class="solic-empty">Nenhuma solicitação encontrada.</div>`;
+    return;
+  }
+  window._solicAffMap = Object.fromEntries(lista.map(s => [s.id, s]));
+  el.innerHTML = lista.map(s => {
+    const data = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    const acoes = s.status === 'pendente'
+      ? `<button class="btn-aprovar" onclick="aprovarSolicAffById('${s.id}')">✓ Aprovar</button>
+         <button class="btn-reprovar" onclick="rejeitarSolicAff('${s.id}')">✕ Rejeitar</button>`
+      : `<span class="status-badge status-${s.status}">${s.status === 'aprovado' ? '✓ Aprovado' : '✕ Rejeitado'}</span>`;
+    return `<div class="solic-item">
+      <div class="solic-info">
+        <div class="solic-nome">${s.nome || '—'} <span style="font-size:11px;color:var(--muted);font-weight:400;">via afiliado: <strong>${s.afiliado_slug || '—'}</strong></span></div>
+        <div class="solic-email">${s.email || '—'}</div>
+        ${s.telefone ? `<div class="solic-tel">📱 ${s.telefone}</div>` : ''}
+        ${s.valor_servico ? `<div class="solic-tel">💰 R$ ${parseFloat(s.valor_servico).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>` : ''}
+        <div class="solic-data">Solicitado em ${data}</div>
+      </div>
+      <div class="solic-actions">${acoes}</div>
+    </div>`;
+  }).join('');
+}
+
+async function aprovarSolicAffById(id) {
+  const s = window._solicAffMap?.[id];
+  if (!s) { alert('Solicitação não encontrada.'); return; }
+  if (!confirm(`Aprovar acesso para ${s.nome}?`)) return;
+  try {
+    const res = await fetch('/api/criar-usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: s.nome, email: s.email, senha: s.senha_temp, telefone: s.telefone || '', afiliado_id: s.afiliado_id, valor_servico: s.valor_servico || 0 })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Erro ao criar usuário');
+    await sb.from('solicitacoes').update({ status: 'aprovado' }).eq('id', id);
+    await carregarSolicitacoes();
+    alert(`✅ ${s.nome} aprovado com sucesso!`);
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function rejeitarSolicAff(id) {
+  if (!confirm('Rejeitar esta solicitação?')) return;
+  await sb.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', id);
+  await carregarSolicitacoes();
 }
 
 function filtrarSolic(status, btn) {
@@ -922,6 +1027,7 @@ function showPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'solicitacoes') carregarSolicitacoes();
+  if (id === 'solic-afiliados') carregarSolicitacoes();
   if (id === 'afiliados') carregarAfiliados();
 }
 
@@ -935,36 +1041,75 @@ function copiarLink() {
 }
 
 // ===================== AFILIADOS =====================
+let _afiliados = [];
+let _alunosAfil = [];
+let _periodoAfiliados = 'mes';
+
 async function carregarAfiliados() {
   const { data: afiliados } = await sb.from('profiles').select('*').eq('role','afiliado').order('created_at',{ascending:false});
-  if (!afiliados) return;
+  const { data: alunosAfil } = await sb.from('profiles').select('*').eq('role','aluno').not('afiliado_id','is',null);
+  _afiliados = afiliados || [];
+  _alunosAfil = alunosAfil || [];
+  document.getElementById('aff-total').textContent = _afiliados.length;
+  renderAfiliados(_periodoAfiliados);
+}
 
-  const { data: alunosAfil } = await sb.from('profiles').select('afiliado_id,created_at').eq('role','aluno').not('afiliado_id','is',null);
+function filtrarAfiliados(periodo, btn) {
+  if (btn) {
+    document.querySelectorAll('#page-afiliados .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  _periodoAfiliados = periodo;
+  renderAfiliados(periodo);
+}
 
+function renderAfiliados(periodo) {
   const agora = new Date();
-  const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
+  let inicio;
+  if (periodo === 'hoje') {
+    inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  } else if (periodo === 'semana') {
+    const dia = agora.getDay() || 7;
+    inicio = new Date(agora); inicio.setDate(agora.getDate() - dia + 1); inicio.setHours(0,0,0,0);
+  } else if (periodo === 'mes') {
+    inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  } else if (periodo === 'custom') {
+    const di = document.getElementById('aff-data-inicio').value;
+    const df = document.getElementById('aff-data-fim').value;
+    inicio = di ? new Date(di) : new Date('2000-01-01');
+    const fim = df ? new Date(df + 'T23:59:59') : agora;
+    renderAfiliadosComFim(inicio, fim);
+    return;
+  } else {
+    inicio = new Date('2000-01-01');
+  }
+  renderAfiliadosComFim(inicio, agora);
+}
 
-  let totalAlunosAfil = 0, totalMes = 0;
+function renderAfiliadosComFim(inicio, fim) {
+  let totalPeriodo = 0, fatPeriodo = 0, fatTotal = 0;
 
-  const rows = afiliados.map(aff => {
-    const meusAlunos = (alunosAfil || []).filter(a => a.afiliado_id === aff.id);
-    const doMes = meusAlunos.filter(a => a.created_at?.startsWith(mesAtual)).length;
-    totalAlunosAfil += meusAlunos.length;
-    totalMes += doMes;
-    const receita = meusAlunos.length * 200;
+  const rows = _afiliados.map(aff => {
+    const todos = _alunosAfil.filter(a => a.afiliado_id === aff.id);
+    const periodo = todos.filter(a => { const d = new Date(a.created_at); return d >= inicio && d <= fim; });
+    const fatP = periodo.reduce((s,a) => s + (parseFloat(a.valor_servico)||0), 0);
+    const fatT = todos.reduce((s,a) => s + (parseFloat(a.valor_servico)||0), 0);
+    totalPeriodo += periodo.length;
+    fatPeriodo += fatP;
+    fatTotal += fatT;
     return `<tr>
-      <td><strong>${aff.nome||'—'}</strong></td>
-      <td style="color:var(--muted)">${aff.email||'—'}</td>
+      <td><strong>${aff.nome||'—'}</strong><br><small style="color:var(--muted)">${aff.email||''}</small></td>
       <td><span style="color:#4ea8ff;font-family:monospace;font-size:12px;">${aff.slug||'—'}</span></td>
-      <td><strong>${meusAlunos.length}</strong></td>
-      <td>${doMes}</td>
-      <td style="color:var(--green-soft)">R$ ${receita.toLocaleString('pt-BR')}</td>
+      <td><strong>${periodo.length}</strong></td>
+      <td>${todos.length}</td>
+      <td style="color:var(--green-soft)">R$ ${fatP.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="color:var(--green-soft)">R$ ${fatT.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
     </tr>`;
   });
 
-  document.getElementById('aff-total').textContent = afiliados.length;
-  document.getElementById('aff-alunos').textContent = totalAlunosAfil;
-  document.getElementById('aff-mes').textContent = totalMes;
+  document.getElementById('aff-alunos-periodo').textContent = totalPeriodo;
+  document.getElementById('aff-fat-periodo').textContent = `R$ ${fatPeriodo.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+  document.getElementById('aff-fat-total').textContent = `R$ ${fatTotal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   document.getElementById('tabela-afiliados').innerHTML = rows.length ? rows.join('') :
     '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Nenhum afiliado cadastrado</td></tr>';
 }

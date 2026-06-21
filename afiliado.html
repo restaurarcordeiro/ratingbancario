@@ -32,6 +32,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .sidebar-link:hover{background:var(--surface2);color:var(--text);}
 .sidebar-link.active{background:rgba(0,200,83,0.12);color:var(--green-soft);}
 .sidebar-link .icon{font-size:16px;width:20px;text-align:center;}
+.badge-pill{background:#f87171;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:100px;margin-left:4px;display:none;}
 .main{padding:32px;overflow-y:auto;}
 .page{display:none;}
 .page.active{display:block;}
@@ -45,6 +46,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .metric-delta{font-size:12px;color:var(--muted);}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
 .card-title{font-size:15px;font-weight:800;margin-bottom:16px;}
+.filtros{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.filtro-btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all 0.2s;}
+.filtro-btn.active,.filtro-btn:hover{background:rgba(0,200,83,0.12);color:var(--green-soft);border-color:rgba(0,200,83,0.3);}
 .link-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .link-text{font-size:13px;color:var(--green-soft);font-family:monospace;word-break:break-all;}
 .btn-copiar{background:rgba(0,200,83,0.1);border:1px solid rgba(0,200,83,0.3);color:var(--green-soft);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
@@ -56,7 +60,8 @@ td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(0,200,83,0.05);
 tr:hover td{background:var(--surface2);}
 .badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;}
 .badge-ativo{background:rgba(0,200,83,0.12);color:var(--green-soft);}
-.badge-inativo{background:rgba(248,113,113,0.12);color:#f87171;}
+.badge-pendente{background:rgba(255,214,0,0.12);color:var(--gold);}
+.badge-rejeitado{background:rgba(248,113,113,0.12);color:#f87171;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr;}}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
@@ -69,6 +74,10 @@ tr:hover td{background:var(--surface2);}
 .btn-sm{padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;border:none;}
 .btn-edit{background:rgba(0,200,83,0.1);color:var(--green-soft);border:1px solid rgba(0,200,83,0.2);}
 .btn-edit:hover{background:rgba(0,200,83,0.2);}
+.btn-aprovar{background:rgba(0,200,83,0.1);color:var(--green-soft);border:1px solid rgba(0,200,83,0.2);padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;margin-right:4px;}
+.btn-aprovar:hover{background:rgba(0,200,83,0.2);}
+.btn-rejeitar{background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.2);padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;cursor:pointer;}
+.btn-rejeitar:hover{background:rgba(248,113,113,0.2);}
 .msg-ok{background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#4ade80;font-weight:600;display:none;margin-top:12px;}
 .msg-err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:#f87171;font-weight:600;display:none;margin-top:12px;}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;}
@@ -100,6 +109,7 @@ tr:hover td{background:var(--surface2);}
   <aside class="sidebar">
     <div class="sidebar-title">Menu</div>
     <button class="sidebar-link active" onclick="showPage('dashboard',this)"><span class="icon">📊</span> Dashboard</button>
+    <button class="sidebar-link" onclick="showPage('solicitacoes',this)" id="link-solic"><span class="icon">📋</span> Solicitações <span class="badge-pill" id="badge-solic">0</span></button>
     <button class="sidebar-link" onclick="showPage('alunos',this)"><span class="icon">👥</span> Meus Alunos</button>
     <button class="sidebar-link" onclick="showPage('novo-aluno',this)"><span class="icon">➕</span> Novo Aluno</button>
     <button class="sidebar-link" onclick="showPage('meu-link',this)"><span class="icon">🔗</span> Meu Link</button>
@@ -111,29 +121,49 @@ tr:hover td{background:var(--surface2);}
     <div class="page active" id="page-dashboard">
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Acompanhe sua performance como afiliado</div>
+
+      <div class="filtros">
+        <button class="filtro-btn" onclick="filtrarDashboard('hoje',this)">Hoje</button>
+        <button class="filtro-btn" onclick="filtrarDashboard('semana',this)">Esta semana</button>
+        <button class="filtro-btn active" onclick="filtrarDashboard('mes',this)">Este mês</button>
+        <button class="filtro-btn" onclick="filtrarDashboard('total',this)">Total</button>
+      </div>
+
       <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Faturamento</div>
+          <div class="metric-value" id="m-faturamento">R$ 0</div>
+          <div class="metric-delta" id="m-fat-periodo">no período</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Alunos no período</div>
+          <div class="metric-value" id="m-alunos-periodo">0</div>
+          <div class="metric-delta" id="m-periodo-label">este mês</div>
+        </div>
         <div class="metric-card">
           <div class="metric-label">Total de Alunos</div>
           <div class="metric-value" id="m-total">0</div>
-          <div class="metric-delta">alunos cadastrados</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Alunos este mês</div>
-          <div class="metric-value" id="m-mes">0</div>
-          <div class="metric-delta" id="m-mes-label">em <span id="m-mes-nome"></span></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Receita estimada</div>
-          <div class="metric-value" id="m-receita">R$ 0</div>
-          <div class="metric-delta">R$ 500 por aluno</div>
+          <div class="metric-delta">todos os tempos</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title">📋 Últimos alunos cadastrados</div>
         <table>
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastrado em</th><th>Status</th></tr></thead>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Valor</th><th>Cadastrado em</th></tr></thead>
           <tbody id="tabela-recentes"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SOLICITAÇÕES -->
+    <div class="page" id="page-solicitacoes">
+      <div class="page-title">Solicitações</div>
+      <div class="page-sub">Clientes que solicitaram acesso pelo seu link</div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Valor</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-solic"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -146,7 +176,7 @@ tr:hover td{background:var(--surface2);}
         <input type="text" id="search-alunos" placeholder="🔍 Buscar por nome ou e-mail..." oninput="filtrarAlunos()"
           style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);width:100%;margin-bottom:16px;outline:none;font-family:'Inter',sans-serif;">
         <table>
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastrado em</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Valor</th><th>Cadastrado em</th><th>Ações</th></tr></thead>
           <tbody id="tabela-alunos"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Carregando...</td></tr></tbody>
         </table>
       </div>
@@ -155,7 +185,7 @@ tr:hover td{background:var(--surface2);}
     <!-- NOVO ALUNO -->
     <div class="page" id="page-novo-aluno">
       <div class="page-title">Novo Aluno</div>
-      <div class="page-sub">Cadastre um novo aluno na sua base</div>
+      <div class="page-sub">Cadastre um novo aluno diretamente na sua base</div>
       <div class="card">
         <div class="form-grid">
           <div class="field">
@@ -173,6 +203,10 @@ tr:hover td{background:var(--surface2);}
           <div class="field">
             <label class="field-label">Telefone</label>
             <input type="tel" id="n-telefone" placeholder="(00) 00000-0000">
+          </div>
+          <div class="field">
+            <label class="field-label">Valor do Serviço (R$) *</label>
+            <input type="number" id="n-valor" placeholder="Ex: 700" min="0" step="0.01">
           </div>
         </div>
         <button class="btn-primary" onclick="cadastrarAluno()" id="btn-cadastrar">Cadastrar Aluno</button>
@@ -201,7 +235,6 @@ tr:hover td{background:var(--surface2);}
     <div class="page" id="page-meu-link">
       <div class="page-title">Meu Link de Indicação</div>
       <div class="page-sub">Compartilhe este link personalizado com seus clientes</div>
-
       <div class="card">
         <div class="card-title">🔗 Seu link exclusivo</div>
         <div class="link-box">
@@ -210,11 +243,10 @@ tr:hover td{background:var(--surface2);}
         </div>
         <span class="copiado" id="copiado-link">✅ Link copiado!</span>
         <p style="font-size:13px;color:var(--muted);margin-top:16px;line-height:1.7;">
-          Quando um cliente acessar a plataforma pelo seu link, ele será automaticamente associado à sua base de alunos.<br>
+          Quando um cliente acessar a plataforma pelo seu link e fizer cadastro, a solicitação aparece automaticamente na sua aba <strong style="color:var(--text);">Solicitações</strong>.<br>
           <strong style="color:var(--text);">Compartilhe no WhatsApp, Instagram, ou qualquer canal que preferir.</strong>
         </p>
       </div>
-
     </div>
 
   </main>
@@ -248,6 +280,7 @@ let afiliadoId = null;
 let afiliadoSlug = null;
 let todosAlunos = [];
 let alunoSelecionadoId = null;
+let periodoAtual = 'mes';
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
@@ -268,8 +301,10 @@ async function init() {
   document.getElementById('meu-link-url').textContent = linkUrl;
 
   await carregarDados();
+  await carregarSolicitacoes();
 }
 
+// ===================== DASHBOARD =====================
 async function carregarDados() {
   const { data: alunos } = await sb.from('profiles')
     .select('*')
@@ -278,37 +313,132 @@ async function carregarDados() {
     .order('created_at', { ascending: false });
 
   todosAlunos = alunos || [];
+  document.getElementById('m-total').textContent = todosAlunos.length;
 
-  // Métricas
-  const total = todosAlunos.length;
-  const agora = new Date();
-  const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}`;
-  const doMes = todosAlunos.filter(a => a.created_at?.startsWith(mesAtual)).length;
-  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  document.getElementById('m-total').textContent = total;
-  document.getElementById('m-mes').textContent = doMes;
-  document.getElementById('m-mes-nome').textContent = meses[agora.getMonth()];
-  document.getElementById('m-receita').textContent = `R$ ${(total * 500).toLocaleString('pt-BR')}`;
-
-  // Tabela recentes (últimos 5)
-  const recentes = todosAlunos.slice(0, 5);
-  const tbRecentes = document.getElementById('tabela-recentes');
-  if (recentes.length === 0) {
-    tbRecentes.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Nenhum aluno cadastrado ainda</td></tr>';
-  } else {
-    tbRecentes.innerHTML = recentes.map(a => `
-      <tr>
-        <td><strong>${a.nome || '—'}</strong></td>
-        <td style="color:var(--muted)">${a.email || '—'}</td>
-        <td style="color:var(--muted)">${formatarData(a.created_at)}</td>
-        <td><span class="badge badge-ativo">Ativo</span></td>
-      </tr>`).join('');
-  }
-
+  atualizarMetricasPeriodo(periodoAtual);
+  renderizarRecentes();
   renderizarAlunos();
 }
 
+function filtrarDashboard(periodo, btn) {
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  periodoAtual = periodo;
+  atualizarMetricasPeriodo(periodo);
+}
+
+function atualizarMetricasPeriodo(periodo) {
+  const agora = new Date();
+  let inicio;
+  let label;
+
+  if (periodo === 'hoje') {
+    inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    label = 'hoje';
+  } else if (periodo === 'semana') {
+    const dia = agora.getDay() || 7;
+    inicio = new Date(agora);
+    inicio.setDate(agora.getDate() - dia + 1);
+    inicio.setHours(0,0,0,0);
+    label = 'esta semana';
+  } else if (periodo === 'mes') {
+    inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+    label = 'este mês';
+  } else {
+    inicio = new Date('2000-01-01');
+    label = 'total';
+  }
+
+  const filtrados = todosAlunos.filter(a => new Date(a.created_at) >= inicio);
+  const faturamento = filtrados.reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
+
+  document.getElementById('m-alunos-periodo').textContent = filtrados.length;
+  document.getElementById('m-periodo-label').textContent = label;
+  document.getElementById('m-faturamento').textContent = `R$ ${faturamento.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  document.getElementById('m-fat-periodo').textContent = label;
+}
+
+function renderizarRecentes() {
+  const recentes = todosAlunos.slice(0, 5);
+  const tb = document.getElementById('tabela-recentes');
+  if (recentes.length === 0) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Nenhum aluno cadastrado ainda</td></tr>';
+    return;
+  }
+  tb.innerHTML = recentes.map(a => `
+    <tr>
+      <td><strong>${a.nome || '—'}</strong></td>
+      <td style="color:var(--muted)">${a.email || '—'}</td>
+      <td style="color:var(--green-soft)">R$ ${parseFloat(a.valor_servico||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="color:var(--muted)">${formatarData(a.created_at)}</td>
+    </tr>`).join('');
+}
+
+// ===================== SOLICITAÇÕES =====================
+async function carregarSolicitacoes() {
+  const { data: solic } = await sb.from('solicitacoes')
+    .select('*')
+    .eq('afiliado_id', afiliadoId)
+    .order('created_at', { ascending: false });
+
+  const pendentes = (solic || []).filter(s => s.status === 'pendente');
+  const badge = document.getElementById('badge-solic');
+  if (pendentes.length > 0) {
+    badge.textContent = pendentes.length;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  const tb = document.getElementById('tabela-solic');
+  if (!solic || solic.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Nenhuma solicitação ainda</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = solic.map(s => `
+    <tr>
+      <td><strong>${s.nome || '—'}</strong></td>
+      <td style="color:var(--muted)">${s.email || '—'}</td>
+      <td style="color:var(--muted)">${s.telefone || '—'}</td>
+      <td style="color:var(--green-soft)">R$ ${parseFloat(s.valor_servico||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="color:var(--muted)">${formatarData(s.created_at)}</td>
+      <td><span class="badge badge-${s.status}">${s.status}</span></td>
+      <td>
+        ${s.status === 'pendente' ? `
+          <button class="btn-aprovar" onclick="aprovarSolic('${s.id}','${(s.nome||'').replace(/'/g,"\\'")}','${s.email}','${s.senha_temp||''}','${s.telefone||''}',${s.valor_servico||0})">✅ Aprovar</button>
+          <button class="btn-rejeitar" onclick="rejeitarSolic('${s.id}')">✕ Rejeitar</button>
+        ` : '—'}
+      </td>
+    </tr>`).join('');
+}
+
+async function aprovarSolic(id, nome, email, senha, telefone, valor) {
+  if (!confirm(`Aprovar e criar acesso para ${nome}?`)) return;
+  try {
+    const res = await fetch('/api/criar-usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, email, senha, telefone, afiliado_id: afiliadoId, valor_servico: valor })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Erro ao criar usuário');
+    await sb.from('solicitacoes').update({ status: 'aprovado' }).eq('id', id);
+    await carregarSolicitacoes();
+    await carregarDados();
+    alert(`✅ Acesso criado para ${nome}!`);
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+async function rejeitarSolic(id) {
+  if (!confirm('Rejeitar esta solicitação?')) return;
+  await sb.from('solicitacoes').update({ status: 'rejeitado' }).eq('id', id);
+  await carregarSolicitacoes();
+}
+
+// ===================== ALUNOS =====================
 function renderizarAlunos() {
   const busca = document.getElementById('search-alunos')?.value?.toLowerCase() || '';
   const filtrados = todosAlunos.filter(a =>
@@ -325,44 +455,46 @@ function renderizarAlunos() {
       <td><strong>${a.nome || '—'}</strong></td>
       <td style="color:var(--muted)">${a.email || '—'}</td>
       <td style="color:var(--muted)">${a.telefone || '—'}</td>
+      <td style="color:var(--green-soft)">R$ ${parseFloat(a.valor_servico||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
       <td style="color:var(--muted)">${formatarData(a.created_at)}</td>
-      <td><span class="badge badge-ativo">Ativo</span></td>
       <td><button class="btn-sm btn-edit" onclick="abrirModalSenha('${a.id}','${(a.nome||'').replace(/'/g,"\\'")}')">🔑 Trocar senha</button></td>
     </tr>`).join('');
 }
 
 function filtrarAlunos() { renderizarAlunos(); }
 
+// ===================== NOVO ALUNO =====================
 async function cadastrarAluno() {
   const nome = document.getElementById('n-nome').value.trim();
   const email = document.getElementById('n-email').value.trim();
   const senha = document.getElementById('n-senha').value;
   const telefone = document.getElementById('n-telefone').value.trim();
+  const valor = parseFloat(document.getElementById('n-valor').value) || 0;
   const ok = document.getElementById('n-ok');
   const err = document.getElementById('n-err');
   const btn = document.getElementById('btn-cadastrar');
   ok.style.display = 'none'; err.style.display = 'none';
 
   if (!nome || !email || !senha) { err.textContent = 'Preencha nome, e-mail e senha.'; err.style.display = 'block'; return; }
+  if (!valor || valor <= 0) { err.textContent = 'Informe o valor do serviço.'; err.style.display = 'block'; return; }
   if (senha.length < 6) { err.textContent = 'A senha deve ter no mínimo 6 caracteres.'; err.style.display = 'block'; return; }
 
   btn.disabled = true; btn.textContent = 'Cadastrando...';
-
   try {
     const res = await fetch('/api/criar-usuario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, email, senha, telefone, afiliado_id: afiliadoId })
+      body: JSON.stringify({ nome, email, senha, telefone, afiliado_id: afiliadoId, valor_servico: valor })
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Erro ao cadastrar');
-
     ok.textContent = `✅ Aluno "${nome}" cadastrado com sucesso!`;
     ok.style.display = 'block';
     document.getElementById('n-nome').value = '';
     document.getElementById('n-email').value = '';
     document.getElementById('n-senha').value = '';
     document.getElementById('n-telefone').value = '';
+    document.getElementById('n-valor').value = '';
     await carregarDados();
   } catch(e) {
     err.textContent = e.message || 'Erro ao cadastrar aluno.';
@@ -371,6 +503,7 @@ async function cadastrarAluno() {
   btn.disabled = false; btn.textContent = 'Cadastrar Aluno';
 }
 
+// ===================== MODAL SENHA =====================
 function abrirModalSenha(id, nome) {
   alunoSelecionadoId = id;
   document.getElementById('modal-aluno-nome').textContent = `Aluno: ${nome}`;
@@ -391,9 +524,7 @@ async function trocarSenha() {
   const err = document.getElementById('modal-err');
   const btn = document.getElementById('btn-trocar');
   ok.style.display = 'none'; err.style.display = 'none';
-
   if (!novaSenha || novaSenha.length < 6) { err.textContent = 'A senha deve ter no mínimo 6 caracteres.'; err.style.display = 'block'; return; }
-
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
     const res = await fetch('/api/criar-usuario', {
@@ -413,6 +544,7 @@ async function trocarSenha() {
   btn.disabled = false; btn.textContent = 'Salvar nova senha';
 }
 
+// ===================== LINKS =====================
 function copiarMeuLink() {
   const link = document.getElementById('meu-link-url').textContent;
   navigator.clipboard.writeText(link).then(() => {
@@ -431,11 +563,13 @@ function copiarLinkEnvio() {
   });
 }
 
+// ===================== NAV =====================
 function showPage(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (el) el.classList.add('active');
+  if (id === 'solicitacoes') carregarSolicitacoes();
 }
 
 function formatarData(iso) {

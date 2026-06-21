@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   // POST — criar usuário
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  const { nome, email, senha, telefone, afiliado_id } = req.body;
+  const { nome, email, senha, telefone, afiliado_id, valor_servico } = req.body;
   if (!nome || !email || !senha) return res.status(400).json({ ok: false, error: 'nome, email e senha obrigatórios' });
   if (senha.length < 6) return res.status(400).json({ ok: false, error: 'Senha deve ter no mínimo 6 caracteres' });
 
@@ -44,6 +44,7 @@ export default async function handler(req, res) {
   // Atualiza profile com nome, telefone e afiliado_id
   const profileBody = { nome, telefone: telefone || null, role: 'aluno' };
   if (afiliado_id) profileBody.afiliado_id = afiliado_id;
+  if (valor_servico) profileBody.valor_servico = valor_servico;
 
   await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
     method: 'PATCH',

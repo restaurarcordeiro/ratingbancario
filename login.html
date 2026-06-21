@@ -98,6 +98,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <input type="tel" id="cad-telefone" placeholder="(00) 00000-0000">
     </div>
     <div class="field">
+      <label class="field-label">Valor do Serviço (R$) *</label>
+      <input type="number" id="cad-valor" placeholder="Ex: 700" min="0" step="0.01">
+    </div>
+    <div class="field">
       <label class="field-label">Senha</label>
       <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres">
     </div>
@@ -194,16 +198,26 @@ async function solicitarCadastro() {
   var nome = document.getElementById('cad-nome').value.trim();
   var email = document.getElementById('cad-email').value.trim();
   var telefone = document.getElementById('cad-telefone').value.trim();
+  var valor = parseFloat(document.getElementById('cad-valor').value) || 0;
   var senha = document.getElementById('cad-senha').value;
   var erro = document.getElementById('cad-error');
   var ok = document.getElementById('cad-success');
   var btn = document.getElementById('btn-cadastro');
   erro.style.display = 'none'; ok.style.display = 'none';
   if (!nome || !email || !senha) { erro.textContent = 'Preencha nome, e-mail e senha.'; erro.style.display = 'block'; return; }
+  if (!valor || valor <= 0) { erro.textContent = 'Informe o valor do serviço.'; erro.style.display = 'block'; return; }
   if (senha.length < 6) { erro.textContent = 'A senha deve ter no mínimo 6 caracteres.'; erro.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Enviando...';
+
+  // Captura ?ref= da URL
+  var refSlug = new URLSearchParams(window.location.search).get('ref') || null;
+  var afiliadoId = null;
+  if (refSlug) {
+    var { data: aff } = await _supa.from('profiles').select('id').eq('slug', refSlug).single();
+    if (aff) afiliadoId = aff.id;
+  }
+
   try {
-    // Verificar se já existe solicitação pendente
     var { data: existing } = await _supa.from('solicitacoes').select('id,status').eq('email', email).single();
     if (existing) {
       if (existing.status === 'pendente') {
@@ -215,13 +229,19 @@ async function solicitarCadastro() {
         erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Solicitar acesso'; return;
       }
     }
-    var { error } = await _supa.from('solicitacoes').insert({ nome: nome, email: email, telefone: telefone, senha_temp: senha, status: 'pendente' });
+    var { error } = await _supa.from('solicitacoes').insert({
+      nome, email, telefone, senha_temp: senha, status: 'pendente',
+      valor_servico: valor,
+      afiliado_slug: refSlug,
+      afiliado_id: afiliadoId
+    });
     if (error) throw error;
-    ok.textContent = '✅ Solicitação enviada! Assim que o administrador aprovar, você receberá acesso para entrar.';
+    ok.textContent = '✅ Solicitação enviada! Assim que for aprovado, você receberá acesso para entrar.';
     ok.style.display = 'block';
     document.getElementById('cad-nome').value = '';
     document.getElementById('cad-email').value = '';
     document.getElementById('cad-telefone').value = '';
+    document.getElementById('cad-valor').value = '';
     document.getElementById('cad-senha').value = '';
   } catch(e) {
     erro.textContent = 'Erro ao enviar solicitação. Tente novamente.';

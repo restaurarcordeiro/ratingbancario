@@ -44,26 +44,32 @@
   "hotPaths": [
     {
       "path": "admin.html",
-      "accessCount": 13,
-      "lastAccessed": 1782055851161,
+      "accessCount": 23,
+      "lastAccessed": 1782057839227,
+      "type": "file"
+    },
+    {
+      "path": "afiliado.html",
+      "accessCount": 6,
+      "lastAccessed": 1782057656703,
       "type": "file"
     },
     {
       "path": "login.html",
+      "accessCount": 5,
+      "lastAccessed": 1782057518051,
+      "type": "file"
+    },
+    {
+      "path": "api\\criar-usuario.js",
       "accessCount": 3,
-      "lastAccessed": 1782055724309,
+      "lastAccessed": 1782057670269,
       "type": "file"
     },
     {
       "path": "migrate-afiliados.sql",
       "accessCount": 1,
       "lastAccessed": 1782055556853,
-      "type": "file"
-    },
-    {
-      "path": "afiliado.html",
-      "accessCount": 1,
-      "lastAccessed": 1782055653403,
       "type": "file"
     },
     {
@@ -79,9 +85,9 @@
       "type": "file"
     },
     {
-      "path": "api\\criar-usuario.js",
+      "path": "migrate-valor-solicitacao.sql",
       "accessCount": 1,
-      "lastAccessed": 1782055688674,
+      "lastAccessed": 1782057433616,
       "type": "file"
     }
   ],
