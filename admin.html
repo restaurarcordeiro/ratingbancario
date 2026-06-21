@@ -221,14 +221,14 @@ tbody td{padding:14px 20px;font-size:13px;}
         <div class="metric-card">
           <div class="metric-icon">💰</div>
           <div class="metric-num" id="met-receita">R$ 0</div>
-          <div class="metric-label">Receita total estimada</div>
-          <div class="metric-delta" style="color:var(--muted)">R$ 697 por aluno</div>
+          <div class="metric-label">Receita própria (sem afiliados)</div>
+          <div class="metric-delta" style="color:var(--muted)">clientes diretos do admin</div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon">📈</div>
-          <div class="metric-num" id="met-score">0</div>
-          <div class="metric-label">Score médio dos alunos</div>
-          <div class="metric-delta" id="met-delta-score" style="color:var(--muted)">média geral</div>
+          <div class="metric-icon">🤝</div>
+          <div class="metric-num" id="met-fat-afiliados">R$ 0</div>
+          <div class="metric-label">Faturamento total afiliados</div>
+          <div class="metric-delta" id="met-delta-afiliados" style="color:var(--muted)">todos os afiliados</div>
         </div>
       </div>
 
@@ -573,17 +573,24 @@ function getClassif(score) {
 }
 
 // ===================== METRICS =====================
-function renderMetrics() {
+async function renderMetrics() {
   const total = todosAlunos.length;
   const ativos = todosAlunos.filter(a => a.ativo).length;
-  const receita = total * VALOR_PRODUTO;
-  const scoreMedio = total > 0 ? Math.round(todosAlunos.reduce((a, al) => a + al.score, 0) / total) : 0;
+
+  // Receita própria = alunos sem afiliado_id (clientes diretos do admin)
+  const alunosProprios = todosAlunos.filter(a => !a.afiliado_id);
+  const receitaPropria = alunosProprios.reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
+
+  // Faturamento total dos afiliados
+  const { data: alunosAfil } = await sb.from('profiles').select('valor_servico').eq('role','aluno').not('afiliado_id','is',null);
+  const fatAfiliados = (alunosAfil || []).reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
 
   document.getElementById('met-total').textContent = total;
   document.getElementById('met-ativos').textContent = ativos;
-  document.getElementById('met-receita').textContent = 'R$ ' + receita.toLocaleString('pt-BR');
-  document.getElementById('met-score').textContent = scoreMedio;
+  document.getElementById('met-receita').textContent = 'R$ ' + receitaPropria.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('met-fat-afiliados').textContent = 'R$ ' + fatAfiliados.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('met-delta-total').textContent = ativos + ' ativos nos últimos 7 dias';
+  document.getElementById('met-delta-afiliados').textContent = (alunosAfil||[]).length + ' alunos via afiliados';
 }
 
 // ===================== CHARTS =====================
