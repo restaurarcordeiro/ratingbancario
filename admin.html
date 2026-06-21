@@ -578,8 +578,9 @@ async function renderMetrics() {
   const ativos = todosAlunos.filter(a => a.ativo).length;
 
   // Receita própria = alunos sem afiliado_id (clientes diretos do admin)
+  // Alunos sem valor_servico preenchido usam R$ 697 como valor padrão
   const alunosProprios = todosAlunos.filter(a => !a.afiliado_id);
-  const receitaPropria = alunosProprios.reduce((s, a) => s + (parseFloat(a.valor_servico) || 0), 0);
+  const receitaPropria = alunosProprios.reduce((s, a) => s + (parseFloat(a.valor_servico) || 697), 0);
 
   // Faturamento total dos afiliados
   const { data: alunosAfil } = await sb.from('profiles').select('valor_servico').eq('role','aluno').not('afiliado_id','is',null);
