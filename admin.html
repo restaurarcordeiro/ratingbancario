@@ -578,6 +578,7 @@ async function carregarDados() {
   renderCharts();
   renderTabela();
   carregarConversas();
+  iniciarGestaoAfiliados();
   carregarSolicitacoes();
 }
 
@@ -648,9 +649,6 @@ function renderCharts() {
     },
     options: { ...chartOpts }
   });
-
-  // Gestão de afiliados
-  await iniciarGestaoAfiliados();
 
   // Receita acumulada
   const receitaData = [];
