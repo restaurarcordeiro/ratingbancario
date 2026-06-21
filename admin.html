@@ -324,7 +324,9 @@ tbody td{padding:14px 20px;font-size:13px;}
           2. Envie para o aluno via WhatsApp ou e-mail:<br><br>
           <span style="background:var(--surface2);border-radius:8px;padding:12px 16px;display:block;font-size:13px;color:#ccc;font-family:monospace;">
             🎓 Seu acesso ao Rating Bancário Pro está liberado!<br>
-            🔗 Link: <span id="link-sistema">https://seusite.netlify.app/login.html</span><br>
+            🔗 Link: <span id="link-sistema" style="color:#4ea8ff;">https://ratingbancario.vercel.app/login.html</span>
+            <button onclick="copiarLink()" title="Copiar link" style="background:none;border:none;cursor:pointer;padding:2px 6px;margin-left:4px;color:#4ea8ff;font-size:15px;vertical-align:middle;" id="btn-copiar-link">📋</button>
+            <span id="copiado-msg" style="color:#4caf50;font-size:11px;display:none;margin-left:4px;">Copiado!</span><br>
             📧 E-mail: (o e-mail que você cadastrou)<br>
             🔑 Senha: (a senha que você definiu)
           </span>
@@ -842,6 +844,15 @@ function showPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'solicitacoes') carregarSolicitacoes();
+}
+
+function copiarLink() {
+  const link = document.getElementById('link-sistema').textContent;
+  navigator.clipboard.writeText(link).then(() => {
+    const msg = document.getElementById('copiado-msg');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  });
 }
 
 async function sair() {
